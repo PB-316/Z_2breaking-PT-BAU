@@ -303,7 +303,7 @@ def my_fun(n=1):
 
 
     df=pd.read_csv("./SCANS/On_Shell_STRONG.csv",index_col=[0])
-    df=df[df["alpha_max"]>3*1e-2]
+    df=df[df["alpha_max"]>9*1e-2]
 
     np.random.seed()
     modi=np.random.randint(0,len(df))
@@ -313,11 +313,12 @@ def my_fun(n=1):
     mu3_val=df.iloc[modi]["mu3"]
     muhs_val=df.iloc[modi]["muhs"]
 
-    m=model1(ms = ms_val*(1+np.random.uniform(-.05,0.05)),
-             theta = theta_val*(1+np.random.uniform(-.05,0.05)),
-             muhs= muhs_val*(1+np.random.uniform(-.05,0.05)) ,
-             u = u_val*(1+np.random.uniform(-.05,0.05)),
-             mu3 = mu3_val*(1+np.random.uniform(-.05,0.05)))
+
+    m=model1(ms = ms_val*(1+np.random.uniform(-0.02,0.02)),
+             theta = theta_val*(1+np.random.uniform(-0.02,0.02)),
+             muhs= muhs_val*(1+np.random.uniform(-0.02,0.02)) ,
+             u = u_val*(1+np.random.uniform(-0.02,0.02)),
+             mu3 = mu3_val*(1+np.random.uniform(-0.02,0.02)))
 
     m.print_couplings()
     thbool=m.theory_consistent()
@@ -381,7 +382,7 @@ start = time.time()
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, np.arange(0,600))
+        df_pool=p.map(f, np.arange(0,40))
 
 
 
