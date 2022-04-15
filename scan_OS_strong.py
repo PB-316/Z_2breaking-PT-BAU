@@ -320,6 +320,41 @@ def my_fun(n=1):
              u = u_val*(1+np.random.uniform(-0.02,0.02)),
              mu3 = mu3_val*(1+np.random.uniform(-0.02,0.02)))
 
+
+#------------------------------------------------------
+    clevs=50
+    myN = 170
+    index_trans=0
+    Temp=df.iloc[modi]["Tnuc_"+str(index_trans)]
+    X_1=[df.iloc[modi]["h_low_"+str(index_trans)],df.iloc[modi]["s_low_"+str(index_trans)]]
+    X_2=[df.iloc[modi]["h_high_"+str(index_trans)],df.iloc[modi]["s_high_"+str(index_trans)]]
+    smax=max(df.iloc[modi]["s_high_"+str(index_trans)],df.iloc[modi]["s_low_"+str(index_trans)])
+    smin=min(df.iloc[modi]["s_high_"+str(index_trans)],df.iloc[modi]["s_low_"+str(index_trans)])
+    hmax=max(df.iloc[modi]["h_high_"+str(index_trans)],df.iloc[modi]["h_low_"+str(index_trans)])
+    hmin=min(df.iloc[modi]["h_high_"+str(index_trans)],df.iloc[modi]["h_low_"+str(index_trans)])
+    box=(hmin-10,hmax+15,smin-10,smax+10)
+    xmin,xmax,ymin,ymax=box
+    x=np.linspace(xmin,xmax,clevs)
+    y=np.linspace(ymin,ymax,clevs)
+    X,Y=np.meshgrid(x,y)
+    Z_V=[]
+    for i in x:
+        Z_V_row=[]
+        for j in y:
+            Z_V_row.append([m.Vtot([i,j],Temp)])
+        Z_V.append(Z_V_row)
+    Z_V=np.array(Z_V).T[0]
+    fig, ax1 = plt.subplots(1,1,figsize=(12,6))
+    ax1.set_title("$V_{eff}(h,s, T=$%1.f"%Temp + "), "+"$\\alpha=$"+str(np.round(df.iloc[modi]["alpha_"+str(index_trans)],4)),size=20)
+    ax1.set_xlabel('$h$',size=20)
+    ax1.set_ylabel('$s$',size=20)
+    cf1 = ax1.contourf(X,Y,Z_V,myN,cmap="RdGy")
+    fig.colorbar(cf1, ax=ax1)
+    ax1.scatter(X_1[0],X_1[1],s=100)
+    ax1.scatter(X_2[0],X_2[1])
+    plt.show()
+    return
+#------------------------------------------------------
     m.print_couplings()
     thbool=m.theory_consistent()
     EWSBbool=m.isEWSB()
@@ -355,9 +390,15 @@ def my_fun(n=1):
                     Delta_rho=m.energyDensity(phi_meta,Tnuc,include_radiation=True)-m.energyDensity(phi_stable,Tnuc,include_radiation=True)
                     alpha=alpha_GW(Tnuc,Delta_rho)
                     alpha_list.append(alpha)
+                    Delta_pressure=m.Vtot(phi_meta,Tnuc) -m.Vtot(phi_stable,Tnuc)
+                    vwformula=(Delta_pressure/Delta_rho)**0.5
+                    xi_Jouguet=((alpha*(2+3*alpha))**0.5+1)/(3**0.5*(1+alpha))
+                    v_calculable=vwformula<xi_Jouguet
                     dict_out.update({ "h_low_"+str(index):phi_stable[0],"s_low_"+str(index):phi_stable[1],
                                      "h_high_"+str(index):phi_meta[0],"s_high_"+str(index):phi_meta[1],
-                                     "Tnuc_"+str(index):Tnuc,"dT_"+str(index):dT,"alpha_"+str(index):alpha})
+                                     "Tnuc_"+str(index):Tnuc,"dT_"+str(index):dT,"alpha_"+str(index):alpha,
+                                     "vwf_"+str(index):vwformula,"xi_J_"+str(index):xi_Jouguet,
+                                     "v_calculable_"+str(index):vwformula<xi_Jouguet})
                     index+=1
             relevant_index=alpha_list.index(max(alpha_list))
             dict_out.update({"num_FOPT":count_trans,"alpha_max":max(alpha_list),
@@ -382,7 +423,7 @@ start = time.time()
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, np.arange(0,40))
+        df_pool=p.map(f, np.arange(0,1))
 
 
 
