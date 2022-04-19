@@ -1740,9 +1740,6 @@ def my_fun(modind):
 
 #---------------------------------
 
-    my_dicts=[]
-    didnt_work_list=[]
-    #for modind in range(1,len(df)+1):
 
     modi=-modind
     dict_out=dict(df.iloc[modi])
@@ -1762,7 +1759,7 @@ def my_fun(modind):
 
             LT_max=10
             LT_min=1
-            some_bubble.grid_scan((.1,0.73,4),(LT_min/some_bubble.T,LT_max/some_bubble.T,4))
+            some_bubble.grid_scan((.18,0.73,5),(LT_min/some_bubble.T,LT_max/some_bubble.T,4))
             some_bubble.find_min_grid()
 
             #some_bubble.which_hydro_sol()
@@ -1784,19 +1781,16 @@ def my_fun(modind):
 
             dict_out.update(some_bubble.guess)
             dict_out.update(some_bubble.hydro_dict)
-            my_dicts.append(dict_out)
         except:
             print("modi=",modi," did not work")
-            didnt_work_list.append(modi)
+
+    return dict_out
 
 
-    return my_dicts, didnt_work_list
-
-
-#---------------------------------
+#---------------------------------Inesert pandas frame here
 df=pd.read_csv("SCANS/On_Shell_STRONG.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
 df=df[df.alpha_max<=2.4369e-2]
-df=df[df.alpha_max>=2.15e-2]
+df=df[df.alpha_max>=2.1e-2]
 df=df[df.num_FOPT==1]
 df=df[df["v_calculable_0"]]
 
@@ -1813,15 +1807,8 @@ if __name__ == '__main__':
     with Pool() as p:
         df_pool=p.map(f, range(1,len(df)+1))
 
-
-pd.DataFrame(df_pool[0][0]).to_csv("./SCANS/Z2_breaking_sols_1.csv")
-
-a_list=df_pool[0][1]
-
-textfile = open("SCANS/didnt_work_list.txt", "w")
-for element in a_list:
-    textfile.write(str(element) + "\n")
-textfile.close()
+print(df_pool)
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_sols_1.csv")
 
 
 
