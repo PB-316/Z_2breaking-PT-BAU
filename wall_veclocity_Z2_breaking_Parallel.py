@@ -1759,7 +1759,7 @@ def my_fun(modind):
 
             LT_max=10
             LT_min=1
-            some_bubble.grid_scan((.18,0.73,5),(LT_min/some_bubble.T,LT_max/some_bubble.T,4))
+            some_bubble.grid_scan((.47,0.8,5),(LT_min/some_bubble.T,LT_max/some_bubble.T,4))
             some_bubble.find_min_grid()
 
             #some_bubble.which_hydro_sol()
@@ -1788,11 +1788,8 @@ def my_fun(modind):
 
 
 #---------------------------------Inesert pandas frame here
-df=pd.read_csv("SCANS/On_Shell_STRONG.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df=df[df.alpha_max<=2.4369e-2]
-df=df[df.alpha_max>=2.1e-2]
-df=df[df.num_FOPT==1]
-df=df[df["v_calculable_0"]]
+df=pd.read_csv("SCANS/Z2_breaking_sols_0.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates().reset_index(drop=True)
+
 
 ###Do parallelization
 from multiprocessing import Pool
