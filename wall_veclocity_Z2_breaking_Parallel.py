@@ -1722,7 +1722,7 @@ def my_fun(modind):
 
 
         fig, ax1 = plt.subplots(1,1,figsize=(12,6))
-        ax1.set_title("$V_{eff}(h,s, T=$%1.f"%Temp + "), "+"$\\alpha=$"+str(np.round(df.iloc[modi]["alpha_"+str(index_trans)],4)),size=20)
+        ax1.set_title("$V_{eff}(h,s, T=$%1.f"%Temp + "), "+"$\\alpha=$"+str(np.round(df.iloc[modi]["alpha_"+str(index_trans)],6)),size=20)
         ax1.set_xlabel('$h$',size=20)
         ax1.set_ylabel('$s$',size=20)
         cf1 = ax1.contourf(X,Y,Z_V,myN,cmap="RdGy")
@@ -1757,9 +1757,9 @@ def my_fun(modind):
             some_bubble=bubble(m)
             some_bubble.initial_guess()
 
-            LT_max=10
+            LT_max=7
             LT_min=1
-            some_bubble.grid_scan((.47,0.8,5),(LT_min/some_bubble.T,LT_max/some_bubble.T,4))
+            some_bubble.grid_scan((.64,0.8,5),(LT_min/some_bubble.T,LT_max/some_bubble.T,4))
             some_bubble.find_min_grid()
 
             #some_bubble.which_hydro_sol()
@@ -1788,8 +1788,10 @@ def my_fun(modind):
 
 
 #---------------------------------Inesert pandas frame here
-df=pd.read_csv("SCANS/Z2_breaking_sols_0.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates().reset_index(drop=True)
-
+df=pd.read_csv("SCANS/On_Shell_STRONG.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df=df[df.alpha_max>0.04262988278897262]
+df=df[df.num_FOPT==1]
+df=df.iloc[0:-100]
 
 ###Do parallelization
 from multiprocessing import Pool
@@ -1805,7 +1807,7 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(1,len(df)+1))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_sols_1.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_sols_6.csv")
 
 
 
