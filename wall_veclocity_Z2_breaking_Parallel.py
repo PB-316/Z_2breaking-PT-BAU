@@ -1508,9 +1508,11 @@ def my_fun(modind):
             #    x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
             #                      np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             #------------------------------------------------------
-
-            x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
-                              np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
+            if v_range[1]>=xi_Jouguet:
+                x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
+                                  np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
+            else:
+                x=np.linspace(v_range[0],v_range[1],v_range[2])
             y=np.linspace(L_range[0],L_range[1],L_range[2])
             print("\n....\n Performing grid scan on a box="+str((v_min,v_max,y[0],y[1]))+"\n ......\n")
             XY=[]
@@ -1741,7 +1743,7 @@ def my_fun(modind):
 #---------------------------------
 
 
-    modi=-modind
+    modi=modind
     dict_out=dict(df.iloc[modi])
     m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs, u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3)
 
@@ -1757,10 +1759,11 @@ def my_fun(modind):
             some_bubble=bubble(m)
             some_bubble.initial_guess()
 
-            LT_max=7
-            LT_min=1
-            some_bubble.grid_scan((.64,0.8,5),(LT_min/some_bubble.T,LT_max/some_bubble.T,4))
-            some_bubble.find_min_grid()
+            LT_max=34
+            LT_min=10
+            some_bubble.grid_scan((.1,0.7,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
+
+
 
             #some_bubble.which_hydro_sol()
             #some_bubble.init_h0_s0()
@@ -1788,10 +1791,13 @@ def my_fun(modind):
 
 
 #---------------------------------Inesert pandas frame here
-df=pd.read_csv("SCANS/On_Shell_STRONG.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df=df[df.alpha_max>0.04262988278897262]
-df=df[df.num_FOPT==1]
-df=df.iloc[0:-100]
+df1=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df=pd.read_csv("SCANS/to_test_BAU.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df=df[df.alpha_max<df1.alpha_max.min()]
+df=df.iloc[2:-1]
+#df=df.iloc[[1,14,16,17,19,21,22,23,24,25,26,27,28,29,30,31,32]]
+#df=df.iloc[[1,16,17,19,21,22,23,24,25,26,27,28,30,32]]
+df=df.iloc[[24,25,26,27,28,30,32]]
 
 ###Do parallelization
 from multiprocessing import Pool
@@ -1804,10 +1810,10 @@ start = time.time()
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, range(1,len(df)+1))
+        df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_sols_6.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_sols_1.csv")
 
 
 
