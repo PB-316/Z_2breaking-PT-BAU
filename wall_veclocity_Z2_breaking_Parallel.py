@@ -1762,7 +1762,7 @@ def my_fun(modind):
             LT_max=34
             LT_min=10
             some_bubble.grid_scan((.1,0.7,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
-
+            some_bubble.find_min_grid()
 
 
             #some_bubble.which_hydro_sol()
