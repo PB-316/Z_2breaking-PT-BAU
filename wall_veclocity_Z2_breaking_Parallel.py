@@ -1508,11 +1508,14 @@ def my_fun(modind):
             #    x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
             #                      np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             #------------------------------------------------------
-            if v_range[1]>=xi_Jouguet:
+            vel_max=self.reduce_vel_init_h0_s0()
+            if vel_max<xi_Jouguet:
+                v_max=vel_max
+            if v_max>=xi_Jouguet:
                 x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
-                                  np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
+                 np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             else:
-                x=np.linspace(v_range[0],v_range[1],v_range[2])
+                x=np.linspace(v_min,v_max,v_range[2])
             y=np.linspace(L_range[0],L_range[1],L_range[2])
             print("\n....\n Performing grid scan on a box="+str((v_min,v_max,y[0],y[1]))+"\n ......\n")
             XY=[]
@@ -1675,6 +1678,7 @@ def my_fun(modind):
                 return False
 
         def reduce_vel_init_h0_s0(self):
+            """This method does reduces the velocity from V_J"""
             alpha_N=alpha_GW(self.m.TnTrans[-1]["Tnuc"],self.m.TnTrans[-1]["Delta_rho"])
             xi_Jouguet=((alpha_N*(2+3*alpha_N))**0.5+1)/(3**0.5*(1+alpha_N))
             guess_out=dict(self.guess)
@@ -1684,9 +1688,9 @@ def my_fun(modind):
                 self.initial_guess()
                 self.guess["vw"]=vel
                 self.which_hydro_sol()
-                self.init_h0_s0()
-                if (self.guess["h0"]==guess_out["h0"]) and self.guess["shigh"]==guess_out["shigh"] and (self.guess["slow"]==guess_out["slow"]):
-                    vel-=0.03
+                phi_high,phi_low=self.init_h0_s0()
+                if abs(phi_high[0])-abs(phi_low[0])<1 and abs(phi_high[1])-abs(phi_low[1])<1:
+                    vel-=1e-4
                 else:
                     break
             self.guess=guess_out
@@ -1797,7 +1801,8 @@ df=df[df.alpha_max<df1.alpha_max.min()]
 df=df.iloc[2:-1]
 #df=df.iloc[[1,14,16,17,19,21,22,23,24,25,26,27,28,29,30,31,32]]
 #df=df.iloc[[1,16,17,19,21,22,23,24,25,26,27,28,30,32]]
-df=df.iloc[[24,25,26,27,28,30,32]]
+#df=df.iloc[[24,25,26,27,28,30,32]]
+df=df.iloc[[25,26,27,28,30,32]]
 
 ###Do parallelization
 from multiprocessing import Pool
