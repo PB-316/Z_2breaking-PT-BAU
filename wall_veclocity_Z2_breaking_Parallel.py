@@ -1689,7 +1689,7 @@ def my_fun(modind):
                 self.guess["vw"]=vel
                 self.which_hydro_sol()
                 phi_high,phi_low=self.init_h0_s0()
-                if abs(phi_high[0])-abs(phi_low[0])<1 and abs(phi_high[1])-abs(phi_low[1])<1:
+                if abs(abs(phi_high[0])-abs(phi_low[0]))<1 and abs(abs(phi_high[1])-abs(phi_low[1]))<1:
                     vel-=1e-4
                 else:
                     break
@@ -1763,8 +1763,8 @@ def my_fun(modind):
             some_bubble=bubble(m)
             some_bubble.initial_guess()
 
-            LT_max=34
-            LT_min=10
+            LT_max=15
+            LT_min=3
             some_bubble.grid_scan((.1,0.7,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
             some_bubble.find_min_grid()
 
@@ -1795,14 +1795,12 @@ def my_fun(modind):
 
 
 #---------------------------------Inesert pandas frame here
-df1=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df=pd.read_csv("SCANS/to_test_BAU.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df=pd.read_csv("SCANS/On_Shell_STRONG_new.csv",index_col=0)
+df1=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU.csv",index_col=0)
 df=df[df.alpha_max<df1.alpha_max.min()]
-df=df.iloc[2:-1]
-#df=df.iloc[[1,14,16,17,19,21,22,23,24,25,26,27,28,29,30,31,32]]
-#df=df.iloc[[1,16,17,19,21,22,23,24,25,26,27,28,30,32]]
-#df=df.iloc[[24,25,26,27,28,30,32]]
-df=df.iloc[[25,26,27,28,30,32]]
+df=df[2e-3<df.alpha_max]
+df=df[df.num_FOPT==1].sort_values("alpha_max",ascending=False).reset_index(drop=True)
+df=df.iloc[90:130]
 
 ###Do parallelization
 from multiprocessing import Pool
