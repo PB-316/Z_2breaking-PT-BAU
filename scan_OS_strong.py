@@ -33,7 +33,7 @@ dof_d=(data.T)[1][900:3900]
 #f = interpolate.interp1d(Temperature_d, dof_d)###"""the function works from T=[10e-4,1000]"""
 g_star = interpolate.interp1d(Temperature_d, dof_d, kind='cubic')
 
-def my_fun(n=1):
+def my_fun(modi):
     class model1(generic_potential_1.generic_potential):
         def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0):
             self.Ndim = 2
@@ -302,25 +302,28 @@ def my_fun(n=1):
 
 
 
-    df=pd.read_csv("./SCANS/On_Shell_STRONG.csv",index_col=[0])
-    df=df[df["alpha_max"]>9*1e-2]
-
     np.random.seed()
-    modi=np.random.randint(0,len(df))
-    ms_val=df.iloc[modi]["ms"]
-    theta_val=df.iloc[modi]["theta"]
-    u_val=df.iloc[modi]["u"]
-    mu3_val=df.iloc[modi]["mu3"]
-    muhs_val=df.iloc[modi]["muhs"]
+    #modi=np.random.randint(0,len(df))
+    #ms_val=df.iloc[modi]["ms"]
+    #theta_val=df.iloc[modi]["theta"]
+    #u_val=df.iloc[modi]["u"]
+    #mu3_val=df.iloc[modi]["mu3"]
+    #muhs_val=df.iloc[modi]["muhs"]
 
 
-    m=model1(ms = ms_val*(1+np.random.uniform(-0.02,0.02)),
-             theta = theta_val*(1+np.random.uniform(-0.02,0.02)),
-             muhs= muhs_val*(1+np.random.uniform(-0.02,0.02)) ,
-             u = u_val*(1+np.random.uniform(-0.02,0.02)),
-             mu3 = mu3_val*(1+np.random.uniform(-0.02,0.02)))
+    # m=model1(ms = ms_val*(1+np.random.uniform(-0.1,0.1)),
+    #          theta = theta_val*(1+np.random.uniform(-0.1,0.1)),
+    #          muhs= muhs_val*(1+np.random.uniform(-0.1,0.1)) ,
+    #          u = u_val*(1+np.random.uniform(-0.1,0.1)),
+    #          mu3 = mu3_val*(1+np.random.uniform(-0.1,0.1)))
 
 
+    ms_val=np.random.uniform(1,v)
+    theta_val=np.random.uniform(-.1,.1)
+    u_val=np.random.uniform(-1000,1000)
+    mu3_val=np.random.uniform(-1000,1000)
+    muhs_val=np.random.uniform(-1000,1000)
+    m=model1(ms = ms_val, theta = theta_val, muhs= muhs_val , u = u_val, mu3 = mu3_val)
 
     m.print_couplings()
     thbool=m.theory_consistent()
@@ -387,14 +390,16 @@ start = time.time()
 ###The Multiprocessing package provides a Pool class,
 ##which allows the parallel execution of a function on the multiple input values.
 ##Pool divides the multiple inputs among the multiple processes which can be run parallelly.
+
+
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, np.arange(0,1))
+        df_pool=p.map(f, np.arange(0,1000))
 
 
 
-pd.DataFrame(df_pool).to_csv("./SCANS/On_Shell_1.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/On_Shell_4.csv")
 
 
 end = time.time()

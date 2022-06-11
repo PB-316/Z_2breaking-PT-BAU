@@ -33,7 +33,7 @@ dof_d=(data.T)[1][900:3900]
 #f = interpolate.interp1d(Temperature_d, dof_d)###"""the function works from T=[10e-4,1000]"""
 g_star = interpolate.interp1d(Temperature_d, dof_d, kind='cubic')
 
-def my_fun(n=1):
+def my_fun(modi):
 
     class model1(generic_potential_1.generic_potential):
         def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0):
@@ -288,13 +288,27 @@ def my_fun(n=1):
 
 
 
+    #modi=np.random.randint(0,len(df))
+    #ms_val=df.iloc[modi].ms*(1+np.random.uniform(-.1,.1))
+    #theta_val=df.iloc[modi].theta*(1+np.random.uniform(-.1,.1))
+    #u_val=df.iloc[modi].u*(1+np.random.uniform(-.1,.1))
+    #mu3_val=df.iloc[modi].mu3*(1+np.random.uniform(-.1,.1))
+    #muhs_val=df.iloc[modi].muhs*(1+np.random.uniform(-.1,.1))
+
+
+    ms_val=df.iloc[modi].ms
+    theta_val=df.iloc[modi].theta
+    u_val=df.iloc[modi].u
+    mu3_val=df.iloc[modi].mu3
+    muhs_val=df.iloc[modi].muhs
+
     for i in range(1):
         np.random.seed()
-        ms_val=np.random.uniform(1,1000)
-        theta_val=np.random.uniform(-.266,.266)
-        u_val=np.random.uniform(-1000,1000)
-        mu3_val=np.random.uniform(-1000,1000)
-        muhs_val=np.random.uniform(-1000,1000)
+        #ms_val=np.random.uniform(1,v)
+        #theta_val=np.random.uniform(-.266,.266)
+        #u_val=np.random.uniform(-1000,1000)
+        #mu3_val=np.random.uniform(-1000,1000)
+        #muhs_val=np.random.uniform(-1000,1000)
 
         m=model1(ms = ms_val, theta = theta_val, muhs= muhs_val , u = u_val, mu3 = mu3_val)
         thbool=m.theory_consistent()
@@ -330,9 +344,15 @@ def my_fun(n=1):
                         Delta_rho=m.energyDensity(phi_meta,Tnuc,include_radiation=True)-m.energyDensity(phi_stable,Tnuc,include_radiation=True)
                         alpha=alpha_GW(Tnuc,Delta_rho)
                         alpha_list.append(alpha)
+                        Delta_pressure=m.Vtot(phi_meta,Tnuc) -m.Vtot(phi_stable,Tnuc)
+                        vwformula=(Delta_pressure/Delta_rho)**0.5
+                        xi_Jouguet=((alpha*(2+3*alpha))**0.5+1)/(3**0.5*(1+alpha))
+                        v_calculable=vwformula<xi_Jouguet
                         dict_out.update({ "h_low_"+str(index):phi_stable[0],"s_low_"+str(index):phi_stable[1],
-                                         "h_high_"+str(index):phi_meta[0],"s_high_"+str(index):phi_meta[1],
-                                         "Tnuc_"+str(index):Tnuc,"dT_"+str(index):dT,"alpha_"+str(index):alpha})
+                                        "h_high_"+str(index):phi_meta[0],"s_high_"+str(index):phi_meta[1],
+                                       "Tnuc_"+str(index):Tnuc,"dT_"+str(index):dT,"alpha_"+str(index):alpha,
+                                       "vwf_"+str(index):vwformula,"xi_J_"+str(index):xi_Jouguet,
+                                       "v_calculable_"+str(index):vwformula<xi_Jouguet})
                         index+=1
                 relevant_index=alpha_list.index(max(alpha_list))
                 dict_out.update({"num_FOPT":count_trans,"alpha_max":max(alpha_list),
@@ -353,14 +373,19 @@ start = time.time()
 ###The Multiprocessing package provides a Pool class,
 ##which allows the parallel execution of a function on the multiple input values.
 ##Pool divides the multiple inputs among the multiple processes which can be run parallelly.
+
+
+df=pd.read_csv("./SCANS/On_Shell_01.csv",index_col=[0]).sort_values("alpha_max")
+
+
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, np.arange(0,5000))
+        df_pool=p.map(f, np.arange(0,len(df)))
 
 
 
-pd.DataFrame(df_pool).to_csv("./SCANS/On_Shell_3.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/On_Shell_0.csv")
 
 
 end = time.time()
