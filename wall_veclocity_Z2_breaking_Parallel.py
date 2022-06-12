@@ -1795,12 +1795,11 @@ def my_fun(modind):
 
 
 #---------------------------------Inesert pandas frame here
-df=pd.read_csv("SCANS/On_Shell_STRONG_new.csv",index_col=0)
-df1=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU.csv",index_col=0)
-df=df[df.alpha_max<df1.alpha_max.min()]
-df=df[2e-3<df.alpha_max]
-df=df[df.num_FOPT==1].sort_values("alpha_max",ascending=False).reset_index(drop=True)
-df=df.iloc[90:130]
+df=pd.read_csv("./SCANS/On_Shell_STRONG_1.csv",index_col=[0])
+df=df[df["num_FOPT"]==1]
+df=df[df.vwf_0 - df.xi_J_0<0]
+df=df[abs(df.theta)<0.05].drop_duplicates().sort_values("alpha_max",ascending=False).reset_index(drop=True)
+df=df[7:33]
 
 ###Do parallelization
 from multiprocessing import Pool
