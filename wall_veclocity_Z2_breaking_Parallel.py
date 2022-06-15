@@ -1799,7 +1799,7 @@ df=pd.read_csv("./SCANS/On_Shell_STRONG_1.csv",index_col=[0])
 df=df[df["num_FOPT"]==1]
 df=df[df.vwf_0 - df.xi_J_0<0]
 df=df[abs(df.theta)<0.05].drop_duplicates().sort_values("alpha_max",ascending=False).reset_index(drop=True)
-df=df[80:120]
+df=df[120:150]
 
 ###Do parallelization
 from multiprocessing import Pool
