@@ -6200,7 +6200,7 @@ Cell[BoxData["\<\"SCANS/BAU/BAU_5.csv\"\>"], "Output",
  CellLabel->"Out[43]=",ExpressionUUID->"126835b8-e841-44e3-98e6-40777b6a12cf"]
 }, Open  ]]
 }, Open  ]]
-}, Open  ]]
+}, Closed]]
 },
 WindowSize->{1355, 465},
 WindowMargins->{{40, Automatic}, {Automatic, 41}},
@@ -6259,7 +6259,7 @@ Cell[295988, 6184, 213, 7, 66, "Print",ExpressionUUID->"1c3aa34f-5f8a-498a-a905-
 Cell[296216, 6194, 362, 5, 42, "Output",ExpressionUUID->"126835b8-e841-44e3-98e6-40777b6a12cf"]
 }, Open  ]]
 }, Open  ]]
-}, Open  ]]
+}, Closed]]
 }
 ]
 *)
