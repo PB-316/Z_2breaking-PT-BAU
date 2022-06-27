@@ -1763,10 +1763,10 @@ def my_fun(modind):
             some_bubble=bubble(m)
             some_bubble.initial_guess()
 
-            LT_max=15
-            LT_min=3
-            some_bubble.grid_scan((.1,0.7,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
-            some_bubble.find_min_grid()
+            LT_max=6
+            LT_min=1
+            some_bubble.grid_scan((.6,0.8,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
+            vel_converged=some_bubble.find_min_grid()
 
 
             #some_bubble.which_hydro_sol()
@@ -1788,6 +1788,9 @@ def my_fun(modind):
 
             dict_out.update(some_bubble.guess)
             dict_out.update(some_bubble.hydro_dict)
+            dict_out.update({"vel_converged":vel_converged[0]})
+            if vel_converged[0]==False:
+                dict_out.update({"Type":"Detonation"})
         except:
             print("modi=",modi," did not work")
 
@@ -1795,11 +1798,21 @@ def my_fun(modind):
 
 
 #---------------------------------Inesert pandas frame here
-df=pd.read_csv("./SCANS/On_Shell_STRONG_1.csv",index_col=[0])
-df=df[df["num_FOPT"]==1]
-df=df[df.vwf_0 - df.xi_J_0<0]
-df=df[abs(df.theta)<0.05].drop_duplicates().sort_values("alpha_max",ascending=False).reset_index(drop=True)
-df=df[120:150]
+
+the_columns=['ms', 'theta', 'u', 'muhs', 'mu3', 'lamh', 'lams', 'lammix', 'muh2',
+       'mus2', 'Pih', 'Pis', 'lamh_tilde', 'th_bool', 'h_low_0', 's_low_0',
+       'h_high_0', 's_high_0', 'Tnuc_0', 'dT_0', 'alpha_0', 'vwf_0', 'xi_J_0',
+       'v_calculable_0', 'num_FOPT', 'alpha_max', 'dT_max', 'tran_type']
+
+df1=pd.read_csv("SCANS/On_Shell_STRONG_0.csv",index_col=[0])
+df1=df1[df1.num_FOPT==1][the_columns]
+df2=pd.read_csv("SCANS/On_Shell_STRONG_1.csv",index_col=[0])
+df2=df2[df2.num_FOPT==1][the_columns]
+df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])[the_columns]
+df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False).reset_index(drop=True)
+df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()]
+df=df_tot[1:20]
+
 
 ###Do parallelization
 from multiprocessing import Pool
@@ -1815,7 +1828,7 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_sols_1.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_1.csv")
 
 
 

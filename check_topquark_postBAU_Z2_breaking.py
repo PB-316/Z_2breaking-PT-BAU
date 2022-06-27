@@ -69,7 +69,7 @@ def my_fun(modi):
             h, s = X[...,0], X[...,1]
 
            #####Scalar thermal masses, obtained from appendix of 1702.06124
-            Pi_h = T**2*(g1**2/16 + 3*g**2/16 + self.lamh/2 + 1/4 + self.lammix/24)
+            Pi_h = T**2*(g1**2/16 + 3*g**2/16 + self.lamh/2 + self.yt**2/4 + self.lammix/24)
             Pi_s= T**2*(self.lammix/6 + self.lams/4)
 
             ##Scalar mass matrix##
@@ -124,66 +124,7 @@ def my_fun(modi):
 
             return M, dof, c, Mphys
 
-        def old_boson_massSq(self, X, T):
-            X = np.array(X)
-            h, s = X[...,0], X[...,1]
 
-
-            #####Scalar thermal masses, obtained from appendix of 1702.06124
-            Pi_h = T**2*(g1**2/16 + 3*g**2/16 + self.lamh/2 + 1/4 + self.lammix/24)
-            Pi_s= T**2*(self.lammix/6 + self.lams/4)
-
-            ##Scalar mass matrix##
-            a=3*h**2*self.lamh + s**2*self.lammix/2 - self.muh2 + s*self.muhs + Pi_h
-            b=h**2*self.lammix/2 + 3*s**2*self.lams - 2*s*self.mu3 - self.mus2 + Pi_s
-            cc=h*s*self.lammix  + h*self.muhs
-            A=(a+b)/2
-            B=1/2*np.sqrt((a-b)**2+4*cc**2)
-            m1=A+B
-            m2=A-B
-
-            ####Gauge boson masses
-            mW = g**2*h**2/4 + 11/6*g**2*T**2
-            ag=g**2*h**2/4 + 11/6*g**2*T**2
-            bg=1/4*g1**2*h**2 + 11/6*g1**2*T**2
-            ccg=-1/4*g1*g*h**2
-            Ag=(ag+bg)/2
-            Bg=1/2*np.sqrt((ag-bg)**2+4*ccg**2)
-            mZ=Ag+Bg
-            mPh=Ag-Bg
-
-
-            M = np.array([m1,m2,mW,mZ])
-            if self.ms<mh:
-                Mphys = np.array([mh**2,self.ms**2,g**2*v**2/4,v**2/4*(g**2+g1**2)])
-            else:
-                Mphys = np.array([self.ms**2,mh**2,g**2*v**2/4,v**2/4*(g**2+g1**2)])
-
-            # At this point, we have an array of boson masses, but each entry might
-            # be an array itself. This happens if the input X is an array of points.
-            # The generic_potential class requires that the output of this function
-            # have the different masses lie along the last axis, just like the
-            # different fields lie along the last axis of X, so we need to reorder
-            # the axes. The next line does this, and should probably be included in
-            # all subclasses.
-            M = np.rollaxis(M, 0, len(M.shape))
-            Mphys = np.rollaxis(Mphys, 0, len(Mphys.shape))
-
-            # The number of degrees of freedom for the masses. This should be a
-            # one-dimensional array with the same number of entries as there are
-            # masses.
-
-            dof = np.array([1,1,6,3])
-
-
-            # c is a constant for each particle used in the Coleman-Weinberg
-            # potential using MS-bar renormalization. It equals 1.5 for all scalars
-            # and the longitudinal polarizations of the gauge bosons, and 0.5 for
-            # transverse gauge bosons.
-            #c = np.array([1.5,1.5,1.5,1.5,1.5,1.5,1.5])
-            c = np.array([1.5,1.5,1.5,1.5])
-
-            return M, dof, c, Mphys
 
 
         def fermion_massSq(self, X):
@@ -344,7 +285,7 @@ def my_fun(modi):
     EWSBbool=m.isEWSB()
 
 
-    Pih=g1**2/16 + 3*g**2/16 + m.lamh/2 + 1/4 + m.lammix/24
+    Pih=g1**2/16 + 3*g**2/16 + m.lamh/2 + m.yt**2/4 + m.lammix/24
     Pis=m.lammix/6 + m.lams/4
     lamh_tilde=m.lamh - m.lammix**2/4/m.lams
     dict_out={'ms':m.ms,'theta':m.theta, 'u':m.u,"muhs":m.muhs,"mu3":m.mu3,"yt":m.yt,
