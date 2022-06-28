@@ -1,3 +1,5 @@
+
+
 import numpy as np
 from cosmoTransitions import generic_potential_1
 import matplotlib.pyplot as plt
@@ -28,6 +30,7 @@ dof_d=(data.T)[1][900:3900]
 g_star = interpolate.interp1d(Temperature_d, dof_d, kind='cubic')
 
 def my_fun(modind):
+    return
     class model1(generic_potential_1.generic_potential):
         def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0):
             self.Ndim = 2
@@ -863,15 +866,109 @@ def my_fun(modind):
             """
             self.m=model
 
-            allTrans=m.TnTrans
-            indx=get_trans_index(m.TnTrans)
-            self.m.TnTrans=[m.TnTrans[indx]]
-
+            allTrans=self.m.TnTrans
+            indx=get_trans_index(allTrans)
+            self.m.TnTrans=[allTrans[indx]]
             self.T=self.m.TnTrans[-1]["Tnuc"]
+            self.Tc=allTrans[indx]["crit_trans"]["Tcrit"]
             self.guess={}
             self.hydro_dict={}
             self.All_Solutions={}
             self.grid_data=[]
+
+            self.xi_Jouguet=None
+            self.LT=None
+            self.vformula=None
+            self.Xmin=None
+        def potential_barrier(self):
+            """Find the minimum energy path at T=Tc, computes the barrier height and
+            returns an approximation for the Lh*Tnuc"""
+            allTrans=self.m.TnTrans
+            Temp=self.Tc
+            h_low,s_low=allTrans[-1]["crit_trans"]["low_vev"]
+            h_high,s_high=allTrans[-1]["crit_trans"]["high_vev"]
+            ###First shift the potential in the s-direction and determine which quadrant to use
+            ##for swiping angle looking for the minimum energy path
+            if np.sign(s_low)>0 and np.sign(s_high)>0 and abs(s_low)<abs(s_high):
+                s_offset=s_low
+                quadrant=1
+                smax=abs(s_low-s_high)
+                smin=0
+            elif np.sign(s_low)>0 and np.sign(s_high)>0 and abs(s_high)<abs(s_low):
+                s_offset=s_low
+                quadrant=-1
+                smax=0
+                smin=-abs(s_low-s_high)
+            elif np.sign(s_low)<0 and np.sign(s_high)<0 and abs(s_high)<abs(s_low):
+                s_offset=s_low
+                quadrant=1
+                smax=abs(s_low-s_high)
+                smin=0
+            elif np.sign(s_low)<0 and np.sign(s_high)<0 and abs(s_high)>abs(s_low):
+                s_offset=s_low
+                quadrant=-1
+                smax=0
+                smin=-abs(s_low-s_high)
+            elif np.sign(s_low)<0 and np.sign(s_high)>0:
+                s_offset=s_low
+                quadrant=1
+                smax=0
+                smin=abs(s_low-s_high)
+
+            elif np.sign(s_low)>0 and np.sign(s_high)<0:
+                s_offset=s_low
+                quadrant=-1
+                smax=0
+                smin=-abs(s_low-s_high)
+            ###Define functions to manage Veff in poler coords
+            def Vpolar(R,T):
+                """The total effective potential in polar coords"""
+                theta, r = R[0], R[1]
+                h=np.cos(theta)*r
+                s=np.sin(theta)*r+s_offset
+                X=np.array([h,s]).T
+                return self.m.Vtot(X,T)
+
+            def polar_coords(X):
+                """Returns polar coordinates for given h,s values"""
+                X=X.T
+                h, s = X[0],X[1]
+                theta=np.arctan(s/h)
+                r=np.sqrt(h**2+s**2)
+                return [theta,r]
+
+            def cartesian_coords(R):
+                """Returns cartesian coordinates for given theta, r values"""
+                R=R.T
+                theta, r = R[0],R[1]
+                h=np.cos(theta)*r
+                s=np.sin(theta)*r
+                return np.array([h,s+s_offset]).T
+
+            def V_min(T):
+                """Returns minima path of the potential across the first quadrant"""
+                theta_range=np.linspace(0.0,quadrant*np.pi/2,200)
+                s_range=[]
+                for th in theta_range:
+                    def V_fun(r):
+                        return Vpolar([th,r],T)
+                    r_min=optimize.minimize(V_fun, abs(s_low-s_high)+50)
+                    s_range.append(r_min.x[0])
+
+                return np.array([theta_range,s_range]).T
+            ##Finally extract the minimum energy path
+            Tc=Temp
+            R_min=V_min(Tc)
+            X_min=cartesian_coords(R_min)
+            ###Finally compute L*Tnuc approximation
+            V_barrier=max(self.m.Vtot(X_min,Temp))-self.m.Vtot(X_min[0],Temp)
+            Tnuc=self.T
+            Phi0=X_min[0][0]
+            LT_approx=(Phi0**2/4/V_barrier*Tc**2)**.5
+            self.LT=LT_approx
+            self.Xmin=X_min
+            print(" Lh*Tnuc=",LT_approx)
+
 
         def test_analytic_formula(self):
             """Test whether the analytic formula would yield v_{analytic}<=v_Jouguet.
@@ -884,6 +981,8 @@ def my_fun(modind):
             radiationDensity=np.pi**2/30*g_star(Tnuc)*Tnuc**4
             print("\n (dV/alpha rho_r)^0.5 =",(dV/alpha_N/radiationDensity)**0.5)
             print("xi_Jouguet=",xi_Jouguet)
+            self.xi_Jouguet=xi_Jouguet
+            self.vformula=(dV/alpha_N/radiationDensity)**0.5
             if (dV/alpha_N/radiationDensity)**0.5 <= xi_Jouguet:
                 return True
             else:
@@ -891,25 +990,22 @@ def my_fun(modind):
 
         def initial_guess(self):
             """
-            This method uses the phase history of model m and fits the solition solution to tanh(z)
-            ansatz to provide initial guesses
+            This method uses set the initial state of the bubble
             """
             #----Estimate velocity from eqn. (8.1) of 2111.02393
             Tnuc=self.T
             alpha_N=alpha_GW(Tnuc,self.m.TnTrans[-1]["Delta_rho"])
-            xi_Jouguet=((alpha_N*(2+3*alpha_N))**0.5+1)/(3**0.5*(1+alpha_N))
-            dV = self.m.Vtot(self.m.TnTrans[-1]['high_vev'],Tnuc)-self.m.Vtot(self.m.TnTrans[-1]['low_vev'],Tnuc)
-            radiationDensity=np.pi**2/30*g_star(Tnuc)*Tnuc**4
-            if (dV/alpha_N/radiationDensity)**0.5 <= xi_Jouguet:
+            xi_Jouguet=self.xi_Jouguet
+            if self.vformula <= xi_Jouguet:
                 print("Initial v_w <= v_Jouguet ")
-                vel=(dV/alpha_N/radiationDensity)**0.5
+                vel=self.vformula
             else:
                 print("Initial v_w > v_Jouguet ")
                 vel=xi_Jouguet
             #------------
             self.guess["vw"]=vel
             gamma=1/(1-vel**2)**0.5
-            Lh=1/self.T
+            Lh=self.LT/self.T
             Ls=Lh
             h0=self.m.TnTrans[-1]["low_vev"][0]
             #s0=self.m.TnTrans[-1]["high_vev"][1]
@@ -927,6 +1023,7 @@ def my_fun(modind):
                 self.guess[params_str[i]]=params_val[i]
             print("The inital fitted guess is \n" )
             print(self.guess)
+
 
         def assign_deflagration(self):
             """This method includes the deflagration treatment for the variables vp,T+ if the guess
@@ -1171,19 +1268,19 @@ def my_fun(modind):
             Ft+=inter_d_dist_v_fermions(mt/Tp)*(q[5]+qb[1])
             Ft*=2*mt*mtprime*tdof/2*Tp**2
             return Fw+Ft
-        def print_friction(self):
-            Lh=self.All_Solutions["Parameters"]["Lh"]
-            z_range=np.linspace(-10*Lh,10*Lh,200)
-            h0=self.guess["h0"]
-            Tnuc=self.m.TnTrans[-1]["Tnuc"]
-            Friction=[Dh_profile(z,Lh,h0)*self.F(z)/Tnuc**5 for z in z_range]
-
-            plt.plot(z_range/Lh,Friction,label="$v=$"+str(self.All_Solutions["Parameters"]["vp"]))
-            plt.xlim(-1,3)
-            plt.xlabel("z/L")
-            plt.ylabel("$F/T_n^5$")
-            plt.legend(loc="upper right")
-            plt.title("Friction force F times h'/Tn^5")
+        # def print_friction(self):
+        #     Lh=self.All_Solutions["Parameters"]["Lh"]
+        #     z_range=np.linspace(-10*Lh,10*Lh,200)
+        #     h0=self.guess["h0"]
+        #     Tnuc=self.m.TnTrans[-1]["Tnuc"]
+        #     Friction=[Dh_profile(z,Lh,h0)*self.F(z)/Tnuc**5 for z in z_range]
+        #
+        #     plt.plot(z_range/Lh,Friction,label="$v=$"+str(self.All_Solutions["Parameters"]["vp"]))
+        #     plt.xlim(-1,3)
+        #     plt.xlabel("z/L")
+        #     plt.ylabel("$F/T_n^5$")
+        #     plt.legend(loc="upper right")
+        #     plt.title("Friction force F times h'/Tn^5")
 
 
 
@@ -1444,6 +1541,63 @@ def my_fun(modind):
             ax[2].set_title("M2 = Eh h'' ")
             fig.subplots_adjust(wspace=0.25)
 
+        def print_barrier1(self):
+            """Make some plots to make sure looks fine"""
+            allTrans=self.m.TnTrans
+            Temp=self.Tc
+            h_low,s_low=allTrans[-1]["crit_trans"]["low_vev"]
+            h_high,s_high=allTrans[-1]["crit_trans"]["high_vev"]
+            X_min=self.Xmin
+            clevs=50
+            myN = 170
+            smax=max(s_low,s_high)
+            smin=min(s_low,s_high)
+            hmax=max(h_low,h_high)
+            hmin=min(h_low,h_high)
+            box=(hmin-10,hmax+15,smin-10,smax+10)
+            xmin,xmax,ymin,ymax=box
+            x=np.linspace(xmin,xmax,clevs)
+            y=np.linspace(ymin,ymax,clevs)
+            X,Y=np.meshgrid(x,y)
+            Z_V=[]
+            for i in x:
+                Z_V_row=[]
+                for j in y:
+                    Z_V_row.append([self.m.Vtot([i,j],Temp)])
+                Z_V.append(Z_V_row)
+            Z_V=np.array(Z_V).T[0]
+            fig, ax1 = plt.subplots(1,1,figsize=(12,6))
+            ax1.set_title("$V_{eff}(h,s, T=$%1.f"%Temp+")" ,size=20)
+            ax1.set_xlabel('$h$',size=20)
+            ax1.set_ylabel('$s$',size=20)
+            cf1 = ax1.contourf(X,Y,Z_V,myN,cmap="RdGy")
+            fig.colorbar(cf1, ax=ax1)
+            ax1.scatter(X_min.T[0],X_min.T[1],s=100)
+            #plt.show()
+
+
+        def print_barrier2(self):
+            """Make some plots to make sure looks fine"""
+            allTrans=self.m.TnTrans
+            Temp=self.Tc
+            h_low,s_low=allTrans[-1]["crit_trans"]["low_vev"]
+            h_high,s_high=allTrans[-1]["crit_trans"]["high_vev"]
+            X_min=self.Xmin
+            #-----------
+            thick_size=16
+            label_size=20
+            R_range=(X_min.T[0]**2+X_min.T[1]**2)**.5
+
+            fig, ax1 = plt.subplots(1,1)
+            ax1.plot(R_range,self.m.Vtot(X_min,Temp))
+            ax1.set_xlabel("R=$\\sqrt{h^2+s^2}$",size=label_size)
+            ax1.set_ylabel("$V_{eff}$",size=label_size)
+            ax1.set_title("Potential barrier at $T=T_c$",size=label_size)
+            ax1.tick_params(labelsize=thick_size)
+            ax1.grid(True)
+            fig.tight_layout()
+
+
 
 
         def hydro_print(self):
@@ -1622,12 +1776,16 @@ def my_fun(modind):
             self.update_h0()
             self.update_Ls()
             moments=self.vel_algorithm(self.guess["vw"],self.guess["Lh"])
-            tol=1e-4
+            tol=.1
+            vp=my_fun_vec([self.guess["vw"]*(1+0.01),self.guess["Lh"]])[0]
+            vm=my_fun_vec([self.guess["vw"]*(1-0.01),self.guess["Lh"]])[0]
+            Lp=my_fun_vec([self.guess["vw"],self.guess["Lh"]*(1+0.01)])[1]
+            Lm=my_fun_vec([self.guess["vw"],self.guess["Lh"]*(1-0.01)])[1]
             print("Moments calculated are:")
             print(moments)
             print("Sum squared of moments  are:")
             print(sum(np.array(moments)**2))
-            if sum(np.array(moments)**2)<tol:
+            if sum(np.array(moments)**2)<tol and np.sign(vp)!=np.sign(vm) and np.sign(Lp)!=np.sign(Lm):
                 print("Converged to the level of %5f"%tol)
                 return True, self.guess, sum(np.array(moments)**2)
             else:
@@ -1761,11 +1919,21 @@ def my_fun(modind):
             alltrans=m.findAllTransitions()
 
             some_bubble=bubble(m)
+            some_bubble.test_analytic_formula()
+            some_bubble.potential_barrier()
             some_bubble.initial_guess()
-
-            LT_max=6
-            LT_min=1
-            some_bubble.grid_scan((.6,0.8,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
+            some_bubble.print_barrier1()
+            plt.savefig("SCANS/PLOTS/barrier2D_"+str(modind)+".png")
+            some_bubble.print_barrier2()
+            plt.savefig("SCANS/PLOTS/barrier1D_"+str(modind)+".png")
+            #LT_max=6
+            #LT_min=1
+            #some_bubble.grid_scan((.6,0.8,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
+            LT_max=some_bubble.LT*(1+.23)
+            LT_min=some_bubble.LT*(1-.23)
+            vmin=some_bubble.vformula*(1-.1)
+            vmax=some_bubble.xi_Jouguet*(1+0.03)
+            some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
             vel_converged=some_bubble.find_min_grid()
 
 
@@ -1788,7 +1956,7 @@ def my_fun(modind):
 
             dict_out.update(some_bubble.guess)
             dict_out.update(some_bubble.hydro_dict)
-            dict_out.update({"vel_converged":vel_converged[0]})
+            dict_out.update({"vel_converged":vel_converged[0],"Tc":some_bubble.Tc,"LT":some_bubble.LT})
             if vel_converged[0]==False:
                 dict_out.update({"Type":"Detonation"})
         except:
@@ -1811,13 +1979,14 @@ df2=df2[df2.num_FOPT==1][the_columns]
 df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])[the_columns]
 df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False).reset_index(drop=True)
 df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()]
-df=df_tot[1:20]
+df=df_tot[30:30]
 
 
 ###Do parallelization
+%%time
 from multiprocessing import Pool
 import time
-start = time.time()
+#start = time.time()
 
 ###The Multiprocessing package provides a Pool class,
 ##which allows the parallel execution of a function on the multiple input values.
@@ -1828,9 +1997,9 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_1.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_2.csv")
 
 
 
-end = time.time()
-print("The time of execution of above program is :", end-start)
+#end = time.time()
+#print("The time of execution of above program is :", end-start)
