@@ -1,5 +1,3 @@
-
-
 import numpy as np
 from cosmoTransitions import generic_potential_1
 import matplotlib.pyplot as plt
@@ -30,7 +28,6 @@ dof_d=(data.T)[1][900:3900]
 g_star = interpolate.interp1d(Temperature_d, dof_d, kind='cubic')
 
 def my_fun(modind):
-    return
     class model1(generic_potential_1.generic_potential):
         def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0):
             self.Ndim = 2
@@ -41,7 +38,6 @@ def my_fun(modind):
             self.u = u
             self.mu3 = mu3
             self.lamh = 1/(4*v2)*(mh**2+self.ms**2 + (mh**2 - ms**2)*np.cos(2*self.theta))
-            #self.lams = 1/(2*self.u**2)*(mh**2*np.sin(self.theta)**2+self.ms**2*np.cos(self.theta)**2 + self.mu3*self.u + self.muhs*v**2/(2*self.u))
             self.lams = 1/(4*self.u**3)*(mh**2*self.u + ms**2*self.u + 2*self.u**2*self.mu3 + v**2*self.muhs - (mh**2-ms**2)*self.u*np.cos(2*self.theta))
             self.lammix = 1/(v*self.u)*(-(self.ms**2-mh**2)*np.sin(self.theta)*np.cos(self.theta) - self.muhs*v)
             self.muh2 = self.lamh*v2 + self.muhs*self.u + self.lammix/2*self.u**2
@@ -1929,10 +1925,10 @@ def my_fun(modind):
             #LT_max=6
             #LT_min=1
             #some_bubble.grid_scan((.6,0.8,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
-            LT_max=some_bubble.LT*(1+.23)
+            LT_max=some_bubble.LT*(1+.25)
             LT_min=some_bubble.LT*(1-.23)
-            vmin=some_bubble.vformula*(1-.1)
-            vmax=some_bubble.xi_Jouguet*(1+0.03)
+            vmin=some_bubble.vformula*(1-.15)
+            vmax=some_bubble.xi_Jouguet*(1+0.01)
             some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
             vel_converged=some_bubble.find_min_grid()
 
@@ -1967,26 +1963,15 @@ def my_fun(modind):
 
 #---------------------------------Inesert pandas frame here
 
-the_columns=['ms', 'theta', 'u', 'muhs', 'mu3', 'lamh', 'lams', 'lammix', 'muh2',
-       'mus2', 'Pih', 'Pis', 'lamh_tilde', 'th_bool', 'h_low_0', 's_low_0',
-       'h_high_0', 's_high_0', 'Tnuc_0', 'dT_0', 'alpha_0', 'vwf_0', 'xi_J_0',
-       'v_calculable_0', 'num_FOPT', 'alpha_max', 'dT_max', 'tran_type']
+df=pd.read_csv("SCANS/to_test.csv",index_col=[0])
 
-df1=pd.read_csv("SCANS/On_Shell_STRONG_0.csv",index_col=[0])
-df1=df1[df1.num_FOPT==1][the_columns]
-df2=pd.read_csv("SCANS/On_Shell_STRONG_1.csv",index_col=[0])
-df2=df2[df2.num_FOPT==1][the_columns]
-df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])[the_columns]
-df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False).reset_index(drop=True)
-df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()]
-df=df_tot[30:30]
 
 
 ###Do parallelization
-%%time
+
 from multiprocessing import Pool
 import time
-#start = time.time()
+start = time.time()
 
 ###The Multiprocessing package provides a Pool class,
 ##which allows the parallel execution of a function on the multiple input values.
@@ -1997,9 +1982,9 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_2.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_3.csv")
 
 
 
-#end = time.time()
-#print("The time of execution of above program is :", end-start)
+end = time.time()
+print("The time of execution of above program is :", end-start)
