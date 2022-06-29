@@ -1963,8 +1963,17 @@ def my_fun(modind):
 
 #---------------------------------Inesert pandas frame here
 
-df=pd.read_csv("SCANS/to_test.csv",index_col=[0])
-
+the_columns=['ms', 'theta', 'u', 'muhs', 'mu3', 'lamh', 'lams', 'lammix', 'muh2',
+       'mus2', 'Pih', 'Pis', 'lamh_tilde', 'Tnuc_0', 'dT_0', 'alpha_0', 'vwf_0', 'xi_J_0',
+       'v_calculable_0', 'num_FOPT', 'alpha_max', 'dT_max', 'tran_type',"h_low_0","s_low_0","h_high_0","s_high_0"]
+df1=pd.read_csv("SCANS/On_Shell_STRONG_0.csv",index_col=[0])
+df1=df1[df1.num_FOPT==1][the_columns]
+df2=pd.read_csv("SCANS/On_Shell_STRONG_1.csv",index_col=[0])
+df2=df2[df2.num_FOPT==1][the_columns]
+df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])[the_columns]
+df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False).reset_index(drop=True)
+df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()]
+df=df_tot[130:140]
 
 
 ###Do parallelization
