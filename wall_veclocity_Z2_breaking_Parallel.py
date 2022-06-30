@@ -1659,9 +1659,9 @@ def my_fun(modind):
             #                      np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             #------------------------------------------------------
             vel_max=self.reduce_vel_init_h0_s0()
-            if vel_max<xi_Jouguet:
-                v_max=vel_max
-            if v_max>=xi_Jouguet:
+            if vel_max<=xi_Jouguet:
+                v_max=vel_max +0.0003   
+            if v_max>xi_Jouguet:
                 x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
                  np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             else:

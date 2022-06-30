@@ -1579,9 +1579,9 @@ def my_fun(modind):
             #                      np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             #------------------------------------------------------
             vel_max=self.reduce_vel_init_h0_s0()
-            if vel_max<xi_Jouguet:
-                v_max=vel_max
-            if v_max>=xi_Jouguet:
+            if vel_max<=xi_Jouguet:
+                v_max=vel_max +0.0003
+            if v_max>xi_Jouguet:
                 x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
                  np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             else:
@@ -1843,13 +1843,13 @@ def my_fun(modind):
             some_bubble.print_barrier2()
             plt.savefig("SCANS/PLOTS/barrier1D_"+str(modind)+".png")
 
-            LT_max=df_reference.iloc[modi].Lh*df_reference.iloc[modi].Tnuc_0*(1+.2)
-            LT_min=df_reference.iloc[modi].Lh*df_reference.iloc[modi].Tnuc_0*(1-.2)
+            LT_max=some_bubble.LT*(1+.25)
+            LT_min=some_bubble.LT*(1-.25)
             if LT_min<1:
                 LT_min=1
-            vmin=df_reference.iloc[modi].vw*(1-.15)
-            vmax=df_reference.iloc[modi].xi_J_0*(1+0.01)
-            some_bubble.grid_scan((.6,0.8,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
+            vmin=some_bubble.vformula*(1-.15)
+            vmax=some_bubble.xi_Jouguet
+            some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
 
 
             vel_converged=some_bubble.find_min_grid()
@@ -1877,14 +1877,10 @@ def my_fun(modind):
 
 
 #---------------------------------Inesert pandas frame here
-df_reference=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df_reference=df_reference[df_reference.EDM_bool==True]
-df_reference["u_Lam"]=df_reference.u/df_reference.Lam_CP
-df_reference=df_reference.sort_values("u_Lam").reset_index(drop=True)
-df_reference=df_reference.iloc[4:]
 
-df=pd.read_csv("SCANS/top_yukawa_rescaled.csv",index_col=[0])
-df=df.iloc[4:]
+
+df=pd.read_csv("SCANS/top_recompute.csv",index_col=[0])
+
 
 ###Do parallelization
 
