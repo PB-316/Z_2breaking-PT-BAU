@@ -1660,7 +1660,7 @@ def my_fun(modind):
             #------------------------------------------------------
             vel_max=self.reduce_vel_init_h0_s0()
             if vel_max<=xi_Jouguet:
-                v_max=vel_max +0.0003   
+                v_max=vel_max +0.0003
             if v_max>xi_Jouguet:
                 x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
                  np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
@@ -1772,11 +1772,13 @@ def my_fun(modind):
             self.update_h0()
             self.update_Ls()
             moments=self.vel_algorithm(self.guess["vw"],self.guess["Lh"])
-            tol=.1
-            vp=my_fun_vec([self.guess["vw"]*(1+0.01),self.guess["Lh"]])[0]
-            vm=my_fun_vec([self.guess["vw"]*(1-0.01),self.guess["Lh"]])[0]
-            Lp=my_fun_vec([self.guess["vw"],self.guess["Lh"]*(1+0.01)])[1]
-            Lm=my_fun_vec([self.guess["vw"],self.guess["Lh"]*(1-0.01)])[1]
+            tol=1
+            vel_sign=sum(X[0]<self.guess["vw"])
+            L_sign=sum(Y.T[0]<self.guess["Lh"])
+            vp=my_fun_vec([X[0][vel_sign-1],self.guess["Lh"]])[0]
+            vm=my_fun_vec([X[0][vel_sign],self.guess["Lh"]])[0]
+            Lp=my_fun_vec([self.guess["vw"],Y.T[0][L_sign-1]])[1]
+            Lm=my_fun_vec([self.guess["vw"],Y.T[0][L_sign]])[1]
             print("Moments calculated are:")
             print(moments)
             print("Sum squared of moments  are:")
@@ -1922,13 +1924,13 @@ def my_fun(modind):
             plt.savefig("SCANS/PLOTS/barrier2D_"+str(modind)+".png")
             some_bubble.print_barrier2()
             plt.savefig("SCANS/PLOTS/barrier1D_"+str(modind)+".png")
-            #LT_max=6
-            #LT_min=1
-            #some_bubble.grid_scan((.6,0.8,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
-            LT_max=some_bubble.LT*(1+.25)
-            LT_min=some_bubble.LT*(1-.23)
+
+            LT_max=some_bubble.LT*2
+            LT_min=some_bubble.LT*.5
+            if LT_min<1:
+                LT_min=1
             vmin=some_bubble.vformula*(1-.15)
-            vmax=some_bubble.xi_Jouguet*(1+0.01)
+            vmax=some_bubble.xi_Jouguet
             some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
             vel_converged=some_bubble.find_min_grid()
 
@@ -1963,7 +1965,18 @@ def my_fun(modind):
 
 #---------------------------------Inesert pandas frame here
 
-
+#TODO MAYBE
+the_columns=['ms', 'theta', 'u', 'muhs', 'mu3', 'lamh', 'lams', 'lammix', 'muh2',
+       'mus2', 'Pih', 'Pis', 'lamh_tilde', 'Tnuc_0', 'dT_0', 'alpha_0', 'vwf_0', 'xi_J_0',
+       'v_calculable_0', 'num_FOPT', 'alpha_max', 'dT_max', 'tran_type',"h_low_0","s_low_0","h_high_0","s_high_0"]
+df1=pd.read_csv("SCANS/On_Shell_STRONG_0.csv",index_col=[0])
+df1=df1[df1.num_FOPT==1][the_columns]
+df2=pd.read_csv("SCANS/On_Shell_STRONG_1.csv",index_col=[0])
+df2=df2[df2.num_FOPT==1][the_columns]
+df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])[the_columns]
+df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False).reset_index(drop=True)
+df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()]
+df=df_tot[140:160]
 
 
 ###Do parallelization
@@ -1981,7 +1994,7 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_5.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_0.csv")
 
 
 
