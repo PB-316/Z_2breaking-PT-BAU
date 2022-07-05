@@ -1925,11 +1925,11 @@ def my_fun(modind):
             some_bubble.print_barrier2()
             plt.savefig("SCANS/PLOTS/barrier1D_"+str(modind)+".png")
 
-            LT_max=some_bubble.LT*2
+            LT_max=some_bubble.LT*3
             LT_min=some_bubble.LT*.5
             if LT_min<1:
                 LT_min=1
-            vmin=some_bubble.vformula*(1-.15)
+            vmin=some_bubble.vformula*(1-.25)
             vmax=some_bubble.xi_Jouguet
             some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
             vel_converged=some_bubble.find_min_grid()
@@ -1974,10 +1974,10 @@ df1=df1[df1.num_FOPT==1][the_columns]
 df2=pd.read_csv("SCANS/On_Shell_STRONG_1.csv",index_col=[0])
 df2=df2[df2.num_FOPT==1][the_columns]
 df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])[the_columns]
-df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False).reset_index(drop=True)
-df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()]
-df=df_tot[140:160]
-
+df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False)
+df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()].reset_index(drop=True)
+#df=df_tot[160:180] done
+df=df_tot[0:140:5]
 
 ###Do parallelization
 
@@ -1994,7 +1994,7 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_0.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/Z2_breaking_no_sols_new.csv")
 
 
 
