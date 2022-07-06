@@ -1976,8 +1976,7 @@ df2=df2[df2.num_FOPT==1][the_columns]
 df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])[the_columns]
 df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(keep=False).sort_values("alpha_max",ascending=False)
 df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()].reset_index(drop=True)
-#df=df_tot[160:180] done
-df=df_tot[0:140:5]
+df=df_tot[180:240] #done
 
 ###Do parallelization
 
