@@ -1973,8 +1973,7 @@ df2=df2[df2.num_FOPT==1]
 df_extract=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])
 df_tot=pd.concat([df1,df2,df_extract]).drop_duplicates(subset=['ms', 'theta', 'u', 'muhs', 'mu3',],keep="first").sort_values("alpha_max",ascending=False)
 df_tot=df_tot[df_tot.alpha_max<df_extract.alpha_max.max()].reset_index(drop=True)
-
-df=df_tot[::15]
+df=df_tot[1::11]
 
 ###Do parallelization
 
