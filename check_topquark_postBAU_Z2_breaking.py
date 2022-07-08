@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import numpy as np
 from cosmoTransitions import generic_potential_1
 import matplotlib.pyplot as plt
@@ -14,6 +8,7 @@ import random
 from scipy import interpolate, special
 
 plt.rcParams["figure.figsize"] = (8, 6)  #set default figure size
+pd.set_option('display.max_rows', None)
 
 
 ####Some definitions##
@@ -26,6 +21,8 @@ g1=np.sqrt(4*np.pi*alpha/(1-sinthw**2)) ##U(1)_Y gauge coupling (also the electr
 g=np.sqrt(4*np.pi*alpha)/sinthw
 Mplanck=2.4*10**18
 cs=1/3**0.5 ##Sound speed constant
+d_eEDM_bound=1.89*10**(-16)
+
 
 
 ####This code uses an interpoaltion function for the number of degrees of freedom as function of temperature
@@ -36,10 +33,35 @@ dof_d=(data.T)[1][900:3900]
 #f = interpolate.interp1d(Temperature_d, dof_d)###"""the function works from T=[10e-4,1000]"""
 g_star = interpolate.interp1d(Temperature_d, dof_d, kind='cubic')
 
+
+def g_loop(z):
+    """Loop integral for EDM. Extracted from (A.2) of 1712.09613"""
+    g_integrand=lambda x: np.log(x*(1-x)/z)/(x*(1-x)-z)
+    integral=integrate.quad(g_integrand,0,1)[0]
+    return z*0.5*integral
+
+
+def d_eEDM(X):
+    X=np.array(X)
+    theta,ms,Lam=X[...,0],X[...,1],X[...,2]
+    G_f=1/2**.5/v**2
+    ee=g1
+    me=0.5*1e-3
+    mt=172.9
+    alpha=1/137
+    numeric=ee/3/np.pi**2*alpha*G_f*v/2**.5/np.pi/mt*me*(v/2**.5/Lam)
+    out=np.sin(theta)*np.cos(theta)*(-g_loop(mt**2/mh**2) + g_loop(mt**2/ms**2))
+    return np.abs(numeric*out)
+
+
+
 def my_fun(modi):
+    print("Working on point number ", modi)
+
     class model1(generic_potential_1.generic_potential):
-        def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0,yt=1):
-            self.yt=yt
+        def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0,Lam=500):
+            self.Lam=Lam
+            self.yt=1/(1+u**2/Lam**2)**.5
             self.Ndim = 2
             self.renormScaleSq = v2
             self.ms = ms
@@ -130,7 +152,8 @@ def my_fun(modi):
         def fermion_massSq(self, X):
             X = np.array(X)
             h,s = X[...,0], X[...,1]
-            mt=self.yt**2*h**2/2
+            mt=self.yt**2*h**2/2*(1+s**2/self.Lam**2)
+            #mt=self.yt**2*h**2/2
             M = np.array([mt])
             Mphys = np.array([v**2/2])
 
@@ -159,10 +182,10 @@ def my_fun(modi):
             perturbativity=self.lamh<=perturbative_limit and self.lams<=perturbative_limit and abs(self.lammix)<=perturbative_limit
             positivity=(self.lamh>0) and (self.lams>0) and (self.lammix>-2*(self.lamh*self.lams)**.5)
             if perturbativity and positivity:
-                print("Model is theoretically consistent \n")
+                #print("Model is theoretically consistent \n")
                 return True
             else:
-                print("Model is NOT theoretically consistent \n")
+                #print("Model is NOT theoretically consistent \n")
                 return False
 
 
@@ -179,20 +202,20 @@ def my_fun(modi):
             X_EW=np.array([v,self.u])
             minima=[]
             if self.muhs==0 and self.mu3==0:
-                print("Model has a Z2 symmetry in the potential \n")
-                print("isEWSB=True \n")
-                return True
+                #print("Model has a Z2 symmetry in the potential \n")
+                #print("isEWSB=True \n")
+                return True,X_EW
             #------------
             X0=self.findMinimum([0,100],0)
             if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(abs(X0[0])-v)>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1:
-                print("Global minimum found at X=",X0,"\n")
-                print("isEWSB=False \n")
-                return False
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
             X0=self.findMinimum([0,-100],0)
             if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(abs(X0[0])-v)>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1:
-                print("Global minimum found at X=",X0,"\n")
-                print("isEWSB=False \n")
-                return False
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
 
             ###This loop search for a global minima randomly
             for i in range(n):
@@ -200,11 +223,11 @@ def my_fun(modi):
                 x2=np.random.uniform(-4*self.Tmax,4*self.Tmax)
                 X0=self.findMinimum([x1,x2], T=0.0)
                 if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(X0[0])-v>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1e2:
-                    print("Global minimum found at X=",X0,"\n")
-                    print("isEWSB=False \n")
-                    return False
-            print("isEWSB=True \n")
-            return True
+                    #print("Global minimum found at X=",X0,"\n")
+                    #print("isEWSB=False \n")
+                    return False, X0
+            #print("isEWSB=True \n")
+            return True,X_EW
 
 
     #######HERE ARE MY OWN FUNCTIONS
@@ -213,6 +236,7 @@ def my_fun(modi):
     #######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTION
     #######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS
     #######HERE ARE MY OWN FUNCTIONS
+
 
 
     def alpha_GW(Tnuc,Drho):
@@ -274,15 +298,23 @@ def my_fun(modi):
         return None
 
 
+    np.random.seed()
 
-    yt_val=1/(1+df.iloc[modi].u**2/df.iloc[modi].Lam_CP**2)**.5
-
-
-    m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs,
-             u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3,yt=yt_val)
-    m.print_couplings()
-    thbool=m.theory_consistent()
-    EWSBbool=m.isEWSB()
+    while True:
+        ms_val=np.random.uniform(1,1000)
+        theta_val=np.random.uniform(-.1,.1)
+        Lam_val=np.random.uniform(200,1000)
+        u_val=np.random.uniform(-Lam_val,Lam_val)
+        mu3_val=np.random.uniform(-1000,1000)
+        muhs_val=np.random.uniform(-1000,1000)
+        m=model1(ms = ms_val, theta =theta_val, muhs = muhs_val,
+                 u = u_val, mu3 =mu3_val,Lam=Lam_val)
+        edm_Bool=d_eEDM([m.theta,m.ms,m.Lam])<d_eEDM_bound
+        thbool=m.theory_consistent()
+        EWSBbool=m.isEWSB()
+        EWSB_new=EWSBbool[0]==True  or (sum(EWSBbool[1]**2)**.5>Mplanck)
+        if edm_Bool==True and thbool==True and EWSB_new:
+            break
 
 
     Pih=g1**2/16 + 3*g**2/16 + m.lamh/2 + m.yt**2/4 + m.lammix/24
@@ -291,57 +323,54 @@ def my_fun(modi):
     dict_out={'ms':m.ms,'theta':m.theta, 'u':m.u,"muhs":m.muhs,"mu3":m.mu3,"yt":m.yt,
           "lamh":m.lamh,"lams":m.lams,"lammix":m.lammix,
           "muh2":m.muh2,"mus2":m.mus2,
-          "Pih":Pih,"Pis":Pis,"lamh_tilde":lamh_tilde}
-    dict_out.update({ "th_bool":thbool and EWSBbool})
-    if thbool==True and EWSBbool==True:
-        try:
-            alltrans=m.findAllTransitions()
-            index=0
-            count_trans=0
-            alpha_list=[]
-            dT_list=[]
-            trans_types=[]
-            for elem in alltrans:
-                if elem["trantype"]==1:
-                    count_trans+=1
-                    phi_stable=elem["low_vev"]
-                    phi_meta=elem["high_vev"]
-                    SymNR=np.sum(m.findMinimum([0,0],1000)**2)**0.5>10
-                    dh,ds=abs(phi_meta-phi_stable)
-                    trans_types.append(trans_class(SymNR))
-                    Tnuc=elem["Tnuc"]
-                    #Tc=elem["Tcrit"]
-                    dT=abs(m.phases[elem["high_phase"]].T[0]-m.phases[elem["low_phase"]].T[-1])
-                    dT_list.append(dT)
-                    Delta_rho=m.energyDensity(phi_meta,Tnuc,include_radiation=True)-m.energyDensity(phi_stable,Tnuc,include_radiation=True)
-                    alpha=alpha_GW(Tnuc,Delta_rho)
-                    alpha_list.append(alpha)
-                    Delta_pressure=m.Vtot(phi_meta,Tnuc) -m.Vtot(phi_stable,Tnuc)
-                    vwformula=(Delta_pressure/Delta_rho)**0.5
-                    xi_Jouguet=((alpha*(2+3*alpha))**0.5+1)/(3**0.5*(1+alpha))
-                    v_calculable=vwformula<xi_Jouguet
-                    dict_out.update({ "h_low_"+str(index):phi_stable[0],"s_low_"+str(index):phi_stable[1],
-                                     "h_high_"+str(index):phi_meta[0],"s_high_"+str(index):phi_meta[1],
-                                     "Tnuc_"+str(index):Tnuc,"dT_"+str(index):dT,"alpha_"+str(index):alpha,
-                                     "vwf_"+str(index):vwformula,"xi_J_"+str(index):xi_Jouguet,
-                                     "v_calculable_"+str(index):vwformula<xi_Jouguet})
-                    index+=1
-            relevant_index=alpha_list.index(max(alpha_list))
-            dict_out.update({"num_FOPT":count_trans,"alpha_max":max(alpha_list),
-                             "dT_max":dT_list[relevant_index],
-                             "tran_type":trans_types[relevant_index]})
+          "Pih":Pih,"Pis":Pis,"lamh_tilde":lamh_tilde,"Lam_CP":m.Lam}
+    dict_out.update({ "th_bool":thbool,"isEWSB": EWSBbool[0],"edm_Bool":edm_Bool})
 
-        except:
-            print("error ocurred")
+    try:
+        alltrans=m.findAllTransitions()
+        index=0
+        count_trans=0
+        alpha_list=[]
+        dT_list=[]
+        trans_types=[]
+        for elem in alltrans:
+            if elem["trantype"]==1:
+                count_trans+=1
+                phi_stable=elem["low_vev"]
+                phi_meta=elem["high_vev"]
+                SymNR=np.sum(m.findMinimum([0,0],1000)**2)**0.5>10
+                dh,ds=abs(phi_meta-phi_stable)
+                trans_types.append(trans_class(SymNR))
+                Tnuc=elem["Tnuc"]
+                Tc=elem["crit_trans"]["Tcrit"]
+                dT=abs(m.phases[elem["high_phase"]].T[0]-m.phases[elem["low_phase"]].T[-1])
+                dT_list.append(dT)
+                Delta_rho=m.energyDensity(phi_meta,Tnuc,include_radiation=True)-m.energyDensity(phi_stable,Tnuc,include_radiation=True)
+                alpha=alpha_GW(Tnuc,Delta_rho)
+                alpha_list.append(alpha)
+                Delta_pressure=m.Vtot(phi_meta,Tnuc) -m.Vtot(phi_stable,Tnuc)
+                vwformula=(Delta_pressure/Delta_rho)**0.5
+                xi_Jouguet=((alpha*(2+3*alpha))**0.5+1)/(3**0.5*(1+alpha))
+                v_calculable=vwformula<xi_Jouguet
+                dict_out.update({ "h_low_"+str(index):phi_stable[0],"s_low_"+str(index):phi_stable[1],
+                                 "h_high_"+str(index):phi_meta[0],"s_high_"+str(index):phi_meta[1],
+                                 "Tnuc_"+str(index):Tnuc,"dT_"+str(index):dT,"alpha_"+str(index):alpha,
+                                 "vwf_"+str(index):vwformula,"xi_J_"+str(index):xi_Jouguet,
+                                 "v_calculable_"+str(index):vwformula<xi_Jouguet})
+                index+=1
+        relevant_index=alpha_list.index(max(alpha_list))
+        dict_out.update({"num_FOPT":count_trans,"alpha_max":max(alpha_list),
+                         "dT_max":dT_list[relevant_index],
+                         "tran_type":trans_types[relevant_index]})
+
+    except:
+        print("error ocurred")
+
     return dict_out
 
 
 
 
-df=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df=df[df.EDM_bool==True]
-df["u_Lam"]=df.u/df.Lam_CP
-df=df.sort_values("u_Lam")
 
 
 ###Do parallelization
@@ -357,7 +386,7 @@ start = time.time()
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, np.arange(0,len(df)))
+        df_pool=p.map(f, np.arange(0,1000))
 
 
 
