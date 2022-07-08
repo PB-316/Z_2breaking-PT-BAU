@@ -30,7 +30,6 @@ d_eEDM_bound=1.89*10**(-16)
 data = np.loadtxt( 'satoshi_dof.dat' )
 Temperature_d=(data.T)[0][900:3900]
 dof_d=(data.T)[1][900:3900]
-#f = interpolate.interp1d(Temperature_d, dof_d)###"""the function works from T=[10e-4,1000]"""
 g_star = interpolate.interp1d(Temperature_d, dof_d, kind='cubic')
 
 
@@ -70,7 +69,6 @@ def my_fun(modi):
             self.u = u
             self.mu3 = mu3
             self.lamh = 1/(4*v2)*(mh**2+self.ms**2 + (mh**2 - ms**2)*np.cos(2*self.theta))
-            #self.lams = 1/(2*self.u**2)*(mh**2*np.sin(self.theta)**2+self.ms**2*np.cos(self.theta)**2 + self.mu3*self.u + self.muhs*v**2/(2*self.u))
             self.lams = 1/(4*self.u**3)*(mh**2*self.u + ms**2*self.u + 2*self.u**2*self.mu3 + v**2*self.muhs - (mh**2-ms**2)*self.u*np.cos(2*self.theta))
             self.lammix = 1/(v*self.u)*(-(self.ms**2-mh**2)*np.sin(self.theta)*np.cos(self.theta) - self.muhs*v)
             self.muh2 = self.lamh*v2 + self.muhs*self.u + self.lammix/2*self.u**2
@@ -120,28 +118,13 @@ def my_fun(modi):
             else:
                 Mphys = np.array([self.ms**2,mh**2,g**2*v**2/4,v**2/4*(g**2+g1**2),g**2*v**2/4,v**2/4*(g**2+g1**2)])
 
-            # At this point, we have an array of boson masses, but each entry might
-            # be an array itself. This happens if the input X is an array of points.
-            # The generic_potential class requires that the output of this function
-            # have the different masses lie along the last axis, just like the
-            # different fields lie along the last axis of X, so we need to reorder
-            # the axes. The next line does this, and should probably be included in
-            # all subclasses.
+
             M = np.rollaxis(M, 0, len(M.shape))
             Mphys = np.rollaxis(Mphys, 0, len(Mphys.shape))
 
-            # The number of degrees of freedom for the masses. This should be a
-            # one-dimensional array with the same number of entries as there are
-            # masses.
 
             dof = np.array([1,1,4,2 , 2,1]) ##Longitudinal at the end
 
-
-            # c is a constant for each particle used in the Coleman-Weinberg
-            # potential using MS-bar renormalization. It equals 1.5 for all scalars
-            # and the longitudinal polarizations of the gauge bosons, and 0.5 for
-            # transverse gauge bosons.
-            #c = np.array([1.5,1.5,1.5,1.5,1.5,1.5,1.5])
             c = np.array([1.5,1.5,1.5,1.5,1.5,1.5])
 
             return M, dof, c, Mphys
@@ -157,13 +140,6 @@ def my_fun(modi):
             M = np.array([mt])
             Mphys = np.array([v**2/2])
 
-            # At this point, we have an array of boson masses, but each entry might
-            # be an array itself. This happens if the input X is an array of points.
-            # The generic_potential class requires that the output of this function
-            # have the different masses lie along the last axis, just like the
-            # different fields lie along the last axis of X, so we need to reorder
-            # the axes. The next line does this, and should probably be included in
-            # all subclasses.
             M = np.rollaxis(M, 0, len(M.shape))
             Mphys = np.rollaxis(Mphys, 0, len(Mphys.shape))
 
