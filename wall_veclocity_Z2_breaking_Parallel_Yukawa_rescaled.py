@@ -17,6 +17,8 @@ g1=np.sqrt(4*np.pi*alpha/(1-sinthw**2))
 g=np.sqrt(4*np.pi*alpha)/sinthw
 Mplanck=2.4*10**18
 cs=1/3**0.5 ##Sound speed constant
+d_eEDM_bound=1.89*10**(-16)
+
 
 
 ####This code uses an interpoaltion function for the number of degrees of freedom as function of temperature
@@ -27,10 +29,30 @@ dof_d=(data.T)[1][900:3900]
 #f = interpolate.interp1d(Temperature_d, dof_d)###"""the function works from T=[10e-4,1000]"""
 g_star = interpolate.interp1d(Temperature_d, dof_d, kind='cubic')
 
+def g_loop(z):
+    """Loop integral for EDM. Extracted from (A.2) of 1712.09613"""
+    g_integrand=lambda x: np.log(x*(1-x)/z)/(x*(1-x)-z)
+    integral=integrate.quad(g_integrand,0,1)[0]
+    return z*0.5*integral
+
+
+def d_eEDM(X):
+    X=np.array(X)
+    theta,ms,Lam=X[...,0],X[...,1],X[...,2]
+    G_f=1/2**.5/v**2
+    ee=g1
+    me=0.5*1e-3
+    mt=172.9
+    alpha=1/137
+    numeric=ee/3/np.pi**2*alpha*G_f*v/2**.5/np.pi/mt*me*(v/2**.5/Lam)
+    out=np.sin(theta)*np.cos(theta)*(-g_loop(mt**2/mh**2) + g_loop(mt**2/ms**2))
+    return np.abs(numeric*out)
+
 def my_fun(modind):
     class model1(generic_potential_1.generic_potential):
-        def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0,yt=1):
-            self.yt=yt
+        def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0,Lam=500):
+            self.Lam=Lam
+            self.yt=1/(1+u**2/Lam**2)**.5
             self.Ndim = 2
             self.renormScaleSq = v2
             self.ms = ms
@@ -39,12 +61,10 @@ def my_fun(modind):
             self.u = u
             self.mu3 = mu3
             self.lamh = 1/(4*v2)*(mh**2+self.ms**2 + (mh**2 - ms**2)*np.cos(2*self.theta))
-            #self.lams = 1/(2*self.u**2)*(mh**2*np.sin(self.theta)**2+self.ms**2*np.cos(self.theta)**2 + self.mu3*self.u + self.muhs*v**2/(2*self.u))
             self.lams = 1/(4*self.u**3)*(mh**2*self.u + ms**2*self.u + 2*self.u**2*self.mu3 + v**2*self.muhs - (mh**2-ms**2)*self.u*np.cos(2*self.theta))
             self.lammix = 1/(v*self.u)*(-(self.ms**2-mh**2)*np.sin(self.theta)*np.cos(self.theta) - self.muhs*v)
             self.muh2 = self.lamh*v2 + self.muhs*self.u + self.lammix/2*self.u**2
             self.mus2 = -self.mu3*self.u + self.lams*self.u**2 + self.muhs*v2/(2*self.u) + self.lammix/2*v2
-
 
         def forbidPhaseCrit(self, X):
             return any([np.array([X])[...,0] < -5.0])
@@ -97,17 +117,20 @@ def my_fun(modind):
 
             dof = np.array([1,1,4,2 , 2,1]) ##Longitudinal at the end
 
-
             c = np.array([1.5,1.5,1.5,1.5,1.5,1.5])
 
             return M, dof, c, Mphys
+
+
+
+
         def fermion_massSq(self, X):
             X = np.array(X)
             h,s = X[...,0], X[...,1]
-            mt=self.yt**2*h**2/2
+            mt=self.yt**2*h**2/2*(1+s**2/self.Lam**2)
+            #mt=self.yt**2*h**2/2
             M = np.array([mt])
             Mphys = np.array([v**2/2])
-
 
             M = np.rollaxis(M, 0, len(M.shape))
             Mphys = np.rollaxis(Mphys, 0, len(Mphys.shape))
@@ -124,13 +147,13 @@ def my_fun(modind):
 
         def theory_consistent(self):
             perturbative_limit=4*np.pi
-            perturbativity=self.lamh<=perturbative_limit and self.lams<=perturbative_limit and self.lammix<=perturbative_limit
+            perturbativity=self.lamh<=perturbative_limit and self.lams<=perturbative_limit and abs(self.lammix)<=perturbative_limit
             positivity=(self.lamh>0) and (self.lams>0) and (self.lammix>-2*(self.lamh*self.lams)**.5)
             if perturbativity and positivity:
-                print("Model is theoretically consistent \n")
+                #print("Model is theoretically consistent \n")
                 return True
             else:
-                print("Model is NOT theoretically consistent \n")
+                #print("Model is NOT theoretically consistent \n")
                 return False
 
 
@@ -147,20 +170,20 @@ def my_fun(modind):
             X_EW=np.array([v,self.u])
             minima=[]
             if self.muhs==0 and self.mu3==0:
-                print("Model has a Z2 symmetry in the potential \n")
-                print("isEWSB=True \n")
-                return True
+                #print("Model has a Z2 symmetry in the potential \n")
+                #print("isEWSB=True \n")
+                return True,X_EW
             #------------
             X0=self.findMinimum([0,100],0)
             if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(abs(X0[0])-v)>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1:
-                print("Global minimum found at X=",X0,"\n")
-                print("isEWSB=False \n")
-                return False
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
             X0=self.findMinimum([0,-100],0)
             if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(abs(X0[0])-v)>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1:
-                print("Global minimum found at X=",X0,"\n")
-                print("isEWSB=False \n")
-                return False
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
 
             ###This loop search for a global minima randomly
             for i in range(n):
@@ -168,11 +191,11 @@ def my_fun(modind):
                 x2=np.random.uniform(-4*self.Tmax,4*self.Tmax)
                 X0=self.findMinimum([x1,x2], T=0.0)
                 if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(X0[0])-v>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1e2:
-                    print("Global minimum found at X=",X0,"\n")
-                    print("isEWSB=False \n")
-                    return False
-            print("isEWSB=True \n")
-            return True
+                    #print("Global minimum found at X=",X0,"\n")
+                    #print("isEWSB=False \n")
+                    return False, X0
+            #print("isEWSB=True \n")
+            return True,X_EW
 
 
     #######HERE ARE MY OWN FUNCTIONS
@@ -1820,12 +1843,14 @@ def my_fun(modind):
 
     modi=modind
     dict_out=dict(df.iloc[modi])
-    m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs,u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3,yt=df.iloc[modi].yt)
+    m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs,u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3,Lam=df.iloc[modi].Lam_CP)
 
     m.print_couplings()
+    edm_Bool=d_eEDM([m.theta,m.ms,m.Lam])<d_eEDM_bound
     thbool=m.theory_consistent()
     EWSBbool=m.isEWSB()
-    if thbool==True and EWSBbool==True:
+    EWSB_new=EWSBbool[0]==True  or (sum(EWSBbool[1]**2)**.5>Mplanck)
+    if edm_Bool==True and thbool==True and EWSB_new:
         potential_plot( modi,df,clevs=50, myN =170, index_trans=0)
         plt.savefig("SCANS/PLOTS/potential_"+str(modind)+".png")
         try:
@@ -1840,15 +1865,13 @@ def my_fun(modind):
             some_bubble.print_barrier2()
             plt.savefig("SCANS/PLOTS/barrier1D_"+str(modind)+".png")
 
-            LT_max=some_bubble.LT*(1+.25)
-            LT_min=some_bubble.LT*(1-.25)
+            LT_max=some_bubble.LT*3
+            LT_min=some_bubble.LT*.5
             if LT_min<1:
                 LT_min=1
-            vmin=some_bubble.vformula*(1-.15)
+            vmin=some_bubble.vformula*(1-.25)
             vmax=some_bubble.xi_Jouguet
             some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
-
-
             vel_converged=some_bubble.find_min_grid()
 
 
@@ -1876,7 +1899,7 @@ def my_fun(modind):
 #---------------------------------Inesert pandas frame here
 
 
-df=pd.read_csv("SCANS/top_recompute.csv",index_col=[0])
+df=pd.read_csv("SCANS/top_yukawa_rescaled_All.csv",index_col=[0]).sort_values("alpha_max",ascending=False)
 
 
 ###Do parallelization
