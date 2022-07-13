@@ -1899,8 +1899,13 @@ def my_fun(modind):
 #---------------------------------Inesert pandas frame here
 
 
-df=pd.read_csv("SCANS/top_yukawa_rescaled_All.csv",index_col=[0]).sort_values("alpha_max",ascending=False)
-
+df0=pd.read_csv("SCANS/full_model_scan_0.csv",index_col=[0])
+df1=pd.read_csv("SCANS/full_model_scan_1.csv",index_col=[0])
+df2=pd.read_csv("SCANS/full_model_scan_2.csv",index_col=[0])
+df_tot=pd.concat([df0,df1,df2])
+df_tot=df_tot[df_tot.num_FOPT==1]
+df_tot=df_tot[df_tot.alpha_max>1e-3]
+df=df_tot[::17]
 
 ###Do parallelization
 
@@ -1917,7 +1922,7 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/top_yukawa_rescaled_vw_solutions.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/full_model_vw_solutions_012.csv")
 
 
 
