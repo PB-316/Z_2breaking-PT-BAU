@@ -277,27 +277,26 @@ def my_fun(modi):
     np.random.seed()
 
     while True:
-        modi=np.random.randint(0,len(df))
-        ms_val=df.iloc[modi]["ms"]
-        theta_val=df.iloc[modi]["theta"]
-        u_val=df.iloc[modi]["u"]
-        Lam_val=df.iloc[modi]["Lam_CP"]
-        mu3_val=df.iloc[modi]["mu3"]
-        muhs_val=df.iloc[modi]["muhs"]
-        m=model1(ms = ms_val,theta = theta_val,muhs= muhs_val ,u = u_val,mu3 = mu3_val)
-                # ms_val=np.random.uniform(1,1000)
-                # theta_val=np.random.uniform(-.1,.1)
-                # Lam_val=np.random.uniform(200,1000)
-                # u_val=np.random.uniform(-Lam_val,Lam_val)
-                # mu3_val=np.random.uniform(-1000,1000)
-                # muhs_val=np.random.uniform(-1000,1000)
-                #m=model1(ms = ms_val, theta =theta_val, muhs = muhs_val,u = u_val, mu3 =mu3_val,Lam=Lam_val)
-        m=model1(ms = ms_val*(1+np.random.uniform(-0.1,0.1)),
-                 theta = theta_val*(1+np.random.uniform(-0.1,0.1)),
-                 muhs= muhs_val*(1+np.random.uniform(-0.1,0.1)) ,
-                 u = u_val*(1+np.random.uniform(-0.1,0.1)),
-                 mu3 = mu3_val*(1+np.random.uniform(-0.1,0.1)),
-                 Lam=Lam_val*(1+np.random.uniform(-0.1,0.1)))
+        # modi=np.random.randint(0,len(df))
+        # ms_val=df.iloc[modi]["ms"]
+        # theta_val=df.iloc[modi]["theta"]
+        # u_val=df.iloc[modi]["u"]
+        # Lam_val=df.iloc[modi]["Lam_CP"]
+        # mu3_val=df.iloc[modi]["mu3"]
+        # muhs_val=df.iloc[modi]["muhs"]
+        ms_val=np.random.uniform(1,1000)
+        theta_val=np.random.uniform(-.1,.1)
+        Lam_val=np.random.uniform(200,1000)
+        u_val=np.random.uniform(-1000,1000)
+        mu3_val=np.random.uniform(-1000,1000)
+        muhs_val=np.random.uniform(-1000,1000)
+        m=model1(ms = ms_val, theta =theta_val, muhs = muhs_val,u = u_val, mu3 =mu3_val,Lam=Lam_val)
+        # m=model1(ms = ms_val*(1+np.random.uniform(-0.1,0.1)),
+        #          theta = theta_val*(1+np.random.uniform(-0.1,0.1)),
+        #          muhs= muhs_val*(1+np.random.uniform(-0.1,0.1)) ,
+        #          u = u_val*(1+np.random.uniform(-0.1,0.1)),
+        #          mu3 = mu3_val*(1+np.random.uniform(-0.1,0.1)),
+        #          Lam=Lam_val*(1+np.random.uniform(-0.1,0.1)))
         edm_Bool=d_eEDM([m.theta,m.ms,m.Lam])<d_eEDM_bound
         thbool=m.theory_consistent()
         EWSBbool=m.isEWSB()
@@ -360,7 +359,7 @@ def my_fun(modi):
 
 
 ##Insert Pandas HERE
-df=pd.read_csv("SCANS/BAU/sols_fullmodel_1.csv",index_col=[0])
+#df=pd.read_csv("SCANS/BAU/sols_fullmodel_1.csv",index_col=[0])
 
 
 
