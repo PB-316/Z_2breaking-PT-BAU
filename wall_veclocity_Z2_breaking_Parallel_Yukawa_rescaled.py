@@ -1900,7 +1900,7 @@ def my_fun(modind):
 
 
 df=pd.read_csv("SCANS/full_model_scan_todo.csv",index_col=[0])
-df=df[::14]
+df=df[::11]
 
 
 ###Do parallelization
