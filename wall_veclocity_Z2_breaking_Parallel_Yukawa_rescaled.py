@@ -1589,26 +1589,17 @@ def my_fun(modind):
                 print("width is non WKB compliant LT<1")
                 Lw+=0.05/self.T
 
-            ##----For small alphas --Reduces velocity if the Higgs EOM is not satisfied deep inside.
             xi_Jouguet=((alpha_N*(2+3*alpha_N))**0.5+1)/(3**0.5*(1+alpha_N))
-            #v_max=self.reduce_vel_init_h0_s0()
-            #if v_max<=xi_Jouguet and v_max>xi_Jouguet-0.03:
-            #    bool_vel=self.vel_max()
-            #    if bool_vel==True:
-            #        v_max=xi_Jouguet-0.03
-            #    x=np.linspace(v_min,v_max,v_range[2])
-            #else:
-            #    x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
-            #                      np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
-            #------------------------------------------------------
+            ##----For small alphas --Reduces velocity if the Higgs EOM is not satisfied deep inside.
             vel_max=self.reduce_vel_init_h0_s0()
-            if vel_max<=xi_Jouguet:
-                v_max=vel_max +0.0003
-            if v_max>xi_Jouguet:
-                x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),
-                 np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
+            if vel_max<xi_Jouguet:
+                v_max=vel_max
+                x=np.linspace(v_min,v_max,v_range[2])
+            elif v_max>xi_Jouguet:
+                x=np.concatenate((np.linspace(v_min,xi_Jouguet-0.0003,v_range[2]//2+1),np.linspace(xi_Jouguet+0.0003,v_max,v_range[2]//2)))
             else:
                 x=np.linspace(v_min,v_max,v_range[2])
+
             y=np.linspace(L_range[0],L_range[1],L_range[2])
             print("\n....\n Performing grid scan on a box="+str((v_min,v_max,y[0],y[1]))+"\n ......\n")
             XY=[]
@@ -1869,6 +1860,9 @@ def my_fun(modind):
             LT_min=some_bubble.LT*.5
             if LT_min<1:
                 LT_min=1
+            elif some_bubble.LT==np.inf:
+                LT_max=10
+                LT_min=1
             vmin=some_bubble.vformula*(1-.25)
             vmax=some_bubble.xi_Jouguet
             some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
@@ -1899,8 +1893,8 @@ def my_fun(modind):
 #---------------------------------Inesert pandas frame here
 
 
-df=pd.read_csv("SCANS/full_model_scan_todo.csv",index_col=[0])
-df=df[::11]
+df=pd.read_csv("SCANS/All_PLOTS/PLOTS_36/zzzfull_model_vw_solutions_new.csv",index_col=[0]).sort_values("alpha_max")
+df=df[np.isnan(list(df.vel_converged))]
 
 
 ###Do parallelization
