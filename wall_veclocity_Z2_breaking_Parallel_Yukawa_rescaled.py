@@ -944,8 +944,12 @@ def my_fun(modind):
             #------------
             self.guess["vw"]=vel
             gamma=1/(1-vel**2)**0.5
-            Lh=self.LT/self.T
-            Ls=Lh
+            if self.LT==np.inf:
+                Lh=1/self.T
+                Ls=Lh
+            else:
+                Lh=self.LT/self.T
+                Ls=Lh
             h0=self.m.TnTrans[-1]["low_vev"][0]
             #s0=self.m.TnTrans[-1]["high_vev"][1]
             shigh=self.m.TnTrans[-1]["high_vev"][1]
@@ -1591,6 +1595,9 @@ def my_fun(modind):
 
             xi_Jouguet=((alpha_N*(2+3*alpha_N))**0.5+1)/(3**0.5*(1+alpha_N))
             ##----For small alphas --Reduces velocity if the Higgs EOM is not satisfied deep inside.
+            #vel_max1=self.reduce_vel_init_h0_s0()
+            #vel_max2=self.vel_max_othername(vel_max1)
+            #vel_max=min(vel_max1,vel_max2)
             vel_max=self.reduce_vel_init_h0_s0()
             if vel_max<xi_Jouguet:
                 v_max=vel_max
@@ -1744,26 +1751,34 @@ def my_fun(modind):
 
             print("alpha ="+str(self.hydro_dict["alpha_p"]) + ", alpha_N=" + str(alpha_N))
 
-        def vel_max(self):
+        def vel_max_othername(self,vel):
             """Models with very low alphas do not satisfy the EOM deep inside the bubble for vw>v_Jouguet.
-            This method checks if this is true and returns a boolean setting a maxium vw. """
+            This method checks if this is true and returns  """
             Tnuc=self.m.TnTrans[-1]["Tnuc"]
-            alpha_N=alpha_GW(Tnuc,self.m.TnTrans[-1]["Delta_rho"])
+            alpha_N=alpha_GW(Tnuc,self.m.TnTrans[-1]["Delta_rho"]) #
             xi_Jouguet=((alpha_N*(2+3*alpha_N))**0.5+1)/(3**0.5*(1+alpha_N))
-            guess_out=dict(self.guess)
-            self.initial_guess()
-            self.guess["vw"]=xi_Jouguet
-            self.which_hydro_sol()
-            self.init_h0_s0()
-            self.sol_perturbations()
-            self.update_h0()
-            h_test=self.guess["h0"]
-            self.guess=guess_out
-            if h_test<=0:
-                print("\n update_h0 returns h0<0 at vw=v_Jouguet")
-                return True
+            guess_out=dict(self.guess) #
+            if vel>=xi_Jouguet:
+                vmax=xi_Jouguet
             else:
-                return False
+                vmax=vel
+            while True:
+                try:
+                    self.initial_guess()
+                    self.guess["vw"]=vmax #
+                    self.which_hydro_sol() #
+                    self.init_h0_s0() #
+                    self.sol_perturbations()#
+                    self.update_h0()#
+                    h_test=self.guess["h0"]#
+                    if h_test<=0:
+                        vmax-=0.09
+                    else:
+                        break
+                except:
+                    vmax-=0.09
+            self.guess=guess_out #
+            return vmax
 
         def reduce_vel_init_h0_s0(self):
             """This method does reduces the velocity from V_J"""
@@ -1894,7 +1909,8 @@ def my_fun(modind):
 
 
 df=pd.read_csv("SCANS/All_PLOTS/PLOTS_36/zzzfull_model_vw_solutions_new.csv",index_col=[0]).sort_values("alpha_max")
-df=df[np.isnan(list(df.vel_converged))]
+df=df[df.vel_converged==True]
+df=df.sample(4).reset_index()
 
 
 ###Do parallelization
