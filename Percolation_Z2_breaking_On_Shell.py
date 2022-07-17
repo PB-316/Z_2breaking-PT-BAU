@@ -860,12 +860,8 @@ def my_fun(modind):
 
 ##------INSERT PANDAS:
 
-df0=pd.read_csv("SCANS/On_Shell_STRONG_0.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df1=pd.read_csv("SCANS/On_Shell_STRONG_1.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df=pd.concat([df0,df1])
-df=df[df.num_FOPT==1].sort_values("alpha_max")
-df=df[df.alpha_max>1e-3]
-df=df[::250]
+df=pd.read_csv("SCANS/PERCOLATION/On_Shell_todo.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df=df[::5]
 
 
 
