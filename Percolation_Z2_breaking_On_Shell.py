@@ -792,7 +792,7 @@ def my_fun(modind):
                 dict_out.update({"SNR_Tnuc_"+str(nuc_dicts.index(nuc_dict)): SNR_Tnuc})
 
                 ##Parameters at PERCOLATION temperature Tp--------------------------------------
-                Tp,volume_shrinks=T_percolation(20,vwall)
+                Tp,volume_shrinks=T_percolation(20,1)
                 dict_out.update({"Tp_"+str(nuc_dicts.index(nuc_dict)):Tp,
                                  "volume_shrinks_"+str(nuc_dicts.index(nuc_dict)):volume_shrinks})
 
@@ -860,10 +860,12 @@ def my_fun(modind):
 
 ##------INSERT PANDAS:
 
-df=pd.read_csv("SCANS/PERCOLATION/On_Shell_todo.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df=df[::5]
-
-
+df0=pd.read_csv("SCANS/On_Shell_STRONG_0.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df1=pd.read_csv("SCANS/On_Shell_STRONG_1.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df=pd.concat([df0,df1])
+df=df[df.num_FOPT==1].sort_values("alpha_max")
+df=df[df.alpha_max>1e-3]
+df=df[::4]
 
 
 ###Do parallelization
