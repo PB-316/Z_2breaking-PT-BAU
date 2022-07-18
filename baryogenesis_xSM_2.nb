@@ -48413,8 +48413,8 @@ Cell[BoxData["33"], "Output",
  CellChangeTimes->{3.8668880036106873`*^9, 3.8669580244382257`*^9},
  CellLabel->"Out[32]=",ExpressionUUID->"f7549b21-dea1-4d12-9b05-50ed1ec58571"]
 }, Open  ]]
-}, Open  ]]
-}, Open  ]]
+}, Closed]]
+}, Closed]]
 },
 WindowSize->{1355, 465},
 WindowMargins->{{34, Automatic}, {Automatic, 13}},
@@ -48685,8 +48685,8 @@ Cell[CellGroupData[{
 Cell[2589260, 48406, 212, 3, 37, "Input",ExpressionUUID->"cb77a013-b120-4ec1-8989-c5f17dda4621"],
 Cell[2589475, 48411, 176, 2, 62, "Output",ExpressionUUID->"f7549b21-dea1-4d12-9b05-50ed1ec58571"]
 }, Open  ]]
-}, Open  ]]
-}, Open  ]]
+}, Closed]]
+}, Closed]]
 }
 ]
 *)
