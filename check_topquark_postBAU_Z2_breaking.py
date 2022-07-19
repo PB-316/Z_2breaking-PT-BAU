@@ -286,8 +286,8 @@ def my_fun(modi):
         # muhs_val=df.iloc[modi]["muhs"]
         ms_val=np.random.uniform(1,1000)
         theta_val=np.random.uniform(-.1,.1)
-        Lam_val=np.random.uniform(200,1000)
-        u_val=np.random.uniform(-1000,1000)
+        Lam_val=np.random.uniform(v,1000)
+        u_val=np.random.uniform(-Lam_val,Lam_val)
         mu3_val=np.random.uniform(-1000,1000)
         muhs_val=np.random.uniform(-1000,1000)
         m=model1(ms = ms_val, theta =theta_val, muhs = muhs_val,u = u_val, mu3 =mu3_val,Lam=Lam_val)
