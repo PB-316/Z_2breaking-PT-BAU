@@ -1908,9 +1908,11 @@ def my_fun(modind):
 #---------------------------------Inesert pandas frame here
 
 
-df=pd.read_csv("SCANS/All_PLOTS/PLOTS_36/zzzfull_model_vw_solutions_new.csv",index_col=[0]).sort_values("alpha_max")
-df=df[df.vel_converged==True]
-df=df.sample(4).reset_index()
+df_todo=pd.read_csv("SCANS/full_model_scan_todo_old.csv",index_col=[0])
+df_todo=df_todo[df_todo.Lam_CP>df_todo.ms]
+df_todo=df_todo[df_todo.Lam_CP>v]
+df_todo=df_todo[df_todo.vwf_0>=0.4197383936628687]
+df=df_todo
 
 
 ###Do parallelization
