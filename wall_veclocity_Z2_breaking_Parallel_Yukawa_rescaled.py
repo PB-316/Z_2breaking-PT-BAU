@@ -1878,8 +1878,10 @@ def my_fun(modind):
             elif some_bubble.LT==np.inf:
                 LT_max=10
                 LT_min=1
-            vmin=some_bubble.vformula*(1-.25)
-            vmax=some_bubble.xi_Jouguet
+            # vmin=some_bubble.vformula*(1-.25)
+            # vmax=some_bubble.xi_Jouguet
+            vmin=some_bubble.vformula*(1-.13)
+            vmax=some_bubble.xi_Jouguet*(1+.13)
             some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
             vel_converged=some_bubble.find_min_grid()
 
@@ -1908,11 +1910,8 @@ def my_fun(modind):
 #---------------------------------Inesert pandas frame here
 
 
-df_todo=pd.read_csv("SCANS/full_model_scan_todo_old.csv",index_col=[0])
-df_todo=df_todo[df_todo.Lam_CP>df_todo.ms]
-df_todo=df_todo[df_todo.Lam_CP>v]
-df_todo=df_todo[df_todo.vwf_0>=0.4197383936628687]
-df=df_todo
+df=pd.read_csv("SCANS/full_model_scan_todo_1.csv",index_col=[0])
+
 
 
 ###Do parallelization
