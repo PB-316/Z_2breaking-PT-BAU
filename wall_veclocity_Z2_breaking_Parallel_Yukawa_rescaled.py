@@ -1910,8 +1910,8 @@ def my_fun(modind):
 #---------------------------------Inesert pandas frame here
 
 
-df=pd.read_csv("SCANS/full_model_scan_todo_1.csv",index_col=[0])
-
+df=pd.read_csv("SCANS/full_model_scan_todo.csv",index_col=[0])
+df=df.iloc[::4]
 
 
 ###Do parallelization
