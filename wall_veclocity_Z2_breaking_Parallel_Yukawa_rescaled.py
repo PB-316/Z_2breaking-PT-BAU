@@ -1911,7 +1911,11 @@ def my_fun(modind):
 
 
 df=pd.read_csv("SCANS/full_model_scan_todo.csv",index_col=[0])
-df=df.iloc[::2]
+df=df[df.Lam_CP>df.ms]
+df=df[df.Lam_CP>v]
+df=df[df.Lam_CP>abs(df.mu3)]
+df=df[df.Lam_CP>abs(df.muhs)]
+
 
 
 ###Do parallelization
