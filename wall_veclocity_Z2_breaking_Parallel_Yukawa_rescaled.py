@@ -1911,7 +1911,7 @@ def my_fun(modind):
 
 
 df=pd.read_csv("SCANS/full_model_scan_todo.csv",index_col=[0])
-df=df.iloc[::4]
+df=df.iloc[::2]
 
 
 ###Do parallelization
