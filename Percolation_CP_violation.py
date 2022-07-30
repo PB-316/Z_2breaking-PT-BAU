@@ -1,4 +1,7 @@
+#!/usr/bin/env python
+# coding: utf-8
 
+# In[1]:
 
 
 import numpy as np
@@ -12,11 +15,6 @@ from scipy import interpolate, special
 import seaborn as sns
 from scipy import misc
 
-
-#get_ipython().run_line_magic('config', "InlineBackend.figure_format = 'retina'")
-#plt.rc('text', usetex=True)
-#plt.rc('font', family='serif')
-#plt.rcParams["figure.figsize"] = (8, 6)  #set default figure size
 
 
 
@@ -43,7 +41,9 @@ g_star_s = interpolate.interp1d(Temperature_d, dof_s, kind='cubic')
 
 def my_fun(modind):
     class model1(generic_potential_1.generic_potential):
-        def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0):
+        def init(self, ms = 50, theta = 0, muhs = 0, u = 100, mu3 = 0,Lam=500):
+            self.Lam=Lam
+            self.yt=1/(1+u**2/Lam**2)**.5
             self.Ndim = 2
             self.renormScaleSq = v2
             self.ms = ms
@@ -73,7 +73,7 @@ def my_fun(modind):
             h, s = X[...,0], X[...,1]
 
            #####Scalar thermal masses, obtained from appendix of 1702.06124
-            Pi_h = T**2*(g1**2/16 + 3*g**2/16 + self.lamh/2 + 1/4 + self.lammix/24)
+            Pi_h = T**2*(g1**2/16 + 3*g**2/16 + self.lamh/2 + self.yt**2/4 + self.lammix/24)
             Pi_s= T**2*(self.lammix/6 + self.lams/4)
 
             ##Scalar mass matrix##
@@ -128,72 +128,14 @@ def my_fun(modind):
 
             return M, dof, c, Mphys
 
-        def old_boson_massSq(self, X, T):
-            X = np.array(X)
-            h, s = X[...,0], X[...,1]
 
-
-            #####Scalar thermal masses, obtained from appendix of 1702.06124
-            Pi_h = T**2*(g1**2/16 + 3*g**2/16 + self.lamh/2 + 1/4 + self.lammix/24)
-            Pi_s= T**2*(self.lammix/6 + self.lams/4)
-
-            ##Scalar mass matrix##
-            a=3*h**2*self.lamh + s**2*self.lammix/2 - self.muh2 + s*self.muhs + Pi_h
-            b=h**2*self.lammix/2 + 3*s**2*self.lams - 2*s*self.mu3 - self.mus2 + Pi_s
-            cc=h*s*self.lammix  + h*self.muhs
-            A=(a+b)/2
-            B=1/2*np.sqrt((a-b)**2+4*cc**2)
-            m1=A+B
-            m2=A-B
-
-            ####Gauge boson masses
-            mW = g**2*h**2/4 + 11/6*g**2*T**2
-            ag=g**2*h**2/4 + 11/6*g**2*T**2
-            bg=1/4*g1**2*h**2 + 11/6*g1**2*T**2
-            ccg=-1/4*g1*g*h**2
-            Ag=(ag+bg)/2
-            Bg=1/2*np.sqrt((ag-bg)**2+4*ccg**2)
-            mZ=Ag+Bg
-            mPh=Ag-Bg
-
-
-            M = np.array([m1,m2,mW,mZ])
-            if self.ms<mh:
-                Mphys = np.array([mh**2,self.ms**2,g**2*v**2/4,v**2/4*(g**2+g1**2)])
-            else:
-                Mphys = np.array([self.ms**2,mh**2,g**2*v**2/4,v**2/4*(g**2+g1**2)])
-
-            # At this point, we have an array of boson masses, but each entry might
-            # be an array itself. This happens if the input X is an array of points.
-            # The generic_potential class requires that the output of this function
-            # have the different masses lie along the last axis, just like the
-            # different fields lie along the last axis of X, so we need to reorder
-            # the axes. The next line does this, and should probably be included in
-            # all subclasses.
-            M = np.rollaxis(M, 0, len(M.shape))
-            Mphys = np.rollaxis(Mphys, 0, len(Mphys.shape))
-
-            # The number of degrees of freedom for the masses. This should be a
-            # one-dimensional array with the same number of entries as there are
-            # masses.
-
-            dof = np.array([1,1,6,3])
-
-
-            # c is a constant for each particle used in the Coleman-Weinberg
-            # potential using MS-bar renormalization. It equals 1.5 for all scalars
-            # and the longitudinal polarizations of the gauge bosons, and 0.5 for
-            # transverse gauge bosons.
-            #c = np.array([1.5,1.5,1.5,1.5,1.5,1.5,1.5])
-            c = np.array([1.5,1.5,1.5,1.5])
-
-            return M, dof, c, Mphys
 
 
         def fermion_massSq(self, X):
             X = np.array(X)
             h,s = X[...,0], X[...,1]
-            mt=h**2/2
+            mt=self.yt**2*h**2/2*(1+s**2/self.Lam**2)
+            #mt=self.yt**2*h**2/2
             M = np.array([mt])
             Mphys = np.array([v**2/2])
 
@@ -222,10 +164,10 @@ def my_fun(modind):
             perturbativity=self.lamh<=perturbative_limit and self.lams<=perturbative_limit and abs(self.lammix)<=perturbative_limit
             positivity=(self.lamh>0) and (self.lams>0) and (self.lammix>-2*(self.lamh*self.lams)**.5)
             if perturbativity and positivity:
-                print("Model is theoretically consistent \n")
+                #print("Model is theoretically consistent \n")
                 return True
             else:
-                print("Model is NOT theoretically consistent \n")
+                #print("Model is NOT theoretically consistent \n")
                 return False
 
 
@@ -242,20 +184,20 @@ def my_fun(modind):
             X_EW=np.array([v,self.u])
             minima=[]
             if self.muhs==0 and self.mu3==0:
-                print("Model has a Z2 symmetry in the potential \n")
-                print("isEWSB=True \n")
-                return True
+                #print("Model has a Z2 symmetry in the potential \n")
+                #print("isEWSB=True \n")
+                return True,X_EW
             #------------
             X0=self.findMinimum([0,100],0)
             if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(abs(X0[0])-v)>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1:
-                print("Global minimum found at X=",X0,"\n")
-                print("isEWSB=False \n")
-                return False
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
             X0=self.findMinimum([0,-100],0)
-            if m.Vtot(X0,0)<=m.Vtot(X_EW,0) and abs(abs(X0[0])-v)>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1:
-                print("Global minimum found at X=",X0,"\n")
-                print("isEWSB=False \n")
-                return False
+            if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(abs(X0[0])-v)>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1:
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
 
             ###This loop search for a global minima randomly
             for i in range(n):
@@ -263,14 +205,40 @@ def my_fun(modind):
                 x2=np.random.uniform(-4*self.Tmax,4*self.Tmax)
                 X0=self.findMinimum([x1,x2], T=0.0)
                 if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(X0[0])-v>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1e2:
-                    print("Global minimum found at X=",X0,"\n")
-                    print("isEWSB=False \n")
-                    return False
-            print("isEWSB=True \n")
-            return True
+                    #print("Global minimum found at X=",X0,"\n")
+                    #print("isEWSB=False \n")
+                    return False, X0
+            #print("isEWSB=True \n")
+            return True,X_EW
 
 
+    #######HERE ARE MY OWN FUNCTIONS
+    #######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS
+    #######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS
+    #######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTION
+    #######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS
+    #######HERE ARE MY OWN FUNCTIONS
 
+    def g_loop(z):
+        """Loop integral for EDM. Extracted from (A.2) of 1712.09613"""
+        g_integrand=lambda x: np.log(x*(1-x)/z)/(x*(1-x)-z)
+        integral=integrate.quad(g_integrand,0,1)[0]
+        return z*0.5*integral
+
+
+    def d_eEDM(X):
+        X=np.array(X)
+        theta,ms,Lam=X[...,0],X[...,1],X[...,2]
+        G_f=1/2**.5/v**2
+        ee=g1
+        me=0.5*1e-3
+        mt=172.9
+        alpha=1/137
+        numeric=ee/3/np.pi**2*alpha*G_f*v/2**.5/np.pi/mt*me*(v/2**.5/Lam)
+        out=np.sin(theta)*np.cos(theta)*(-g_loop(mt**2/mh**2) + g_loop(mt**2/ms**2))
+        return np.abs(numeric*out)
+
+    d_eEDM_bound=1.89*10**(-16)
 
     def alpha_GW(Tnuc,Drho):
         ####This code gives the parameter alpha relevant for stochastic GW spectrum
@@ -663,6 +631,13 @@ def my_fun(modind):
 
 
 
+
+    # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # Compute the transition of model(s)
+
+    # In[2]:
+
+
     def findTnuc():
         """Finds the nucleation temperature and checks if it actually satisfies the condition Gamma/H^4==1"""
         fun_nucleation=lambda T: (Gamma(T)/Hubble_total(T)**4-1.)**4
@@ -684,13 +659,13 @@ def my_fun(modind):
             return None, None, False
 
 
+    # In[4]:
 
-#---------
 
+    hydrocolumns=['vw', 'Lh', 'dh', 'h0', 'Ls', 'ds', 'shigh', 'slow',
+                  'Type', 'alpha_p', 'vm', 'vp', 'xi_s', 'Tp/TN', 'vel_converged']
 
-    # modi=np.random.randint(0,len(df))
     modi=modind
-    # print(modi)
 
 
     num_points=1
@@ -700,22 +675,23 @@ def my_fun(modind):
         u_val=df.iloc[modi]["u"]
         mu3_val=df.iloc[modi]["mu3"]
         muhs_val=df.iloc[modi]["muhs"]
-        m=model1(ms = ms_val, theta = theta_val,muhs= muhs_val ,u = u_val,mu3 = mu3_val)
+        Lam_val=df.iloc[modi]["Lam_CP"]
+        m=model1(ms = ms_val, theta = theta_val,muhs= muhs_val ,u = u_val,mu3 = mu3_val,Lam=Lam_val)
 
-        m.print_couplings()
+        edm_Bool=d_eEDM([m.theta,m.ms,m.Lam])<d_eEDM_bound
         thbool=m.theory_consistent()
         EWSBbool=m.isEWSB()
-        Pih=g1**2/16 + 3*g**2/16 + m.lamh/2 + 1/4 + m.lammix/24
+        EWSB_new=EWSBbool[0]==True  or (sum(EWSBbool[1]**2)**.5>Mplanck)
+        if not (edm_Bool==True and thbool==True and EWSB_new):
+            break
+        Pih=g1**2/16 + 3*g**2/16 + m.lamh/2 + m.yt**2/4 + m.lammix/24
         Pis=m.lammix/6 + m.lams/4
         lamh_tilde=m.lamh - m.lammix**2/4/m.lams
-        dict_out={'ms':m.ms,'theta':m.theta, 'u':m.u,"muhs":m.muhs,"mu3":m.mu3,
-                  "lamh":m.lamh,"lams":m.lams,"lammix":m.lammix,
-                  "muh2":m.muh2,"mus2":m.mus2,
-                  "Pih":Pih,"Pis":Pis,"lamh_tilde":lamh_tilde}
-        dict_out.update({ "th_bool":thbool and EWSBbool})
-        #---------Theoretical consistency
-        if dict_out["th_bool"]==False:
-            continue
+        dict_out={'ms':m.ms,'theta':m.theta, 'u':m.u,"muhs":m.muhs,"mu3":m.mu3,"yt":m.yt,
+              "lamh":m.lamh,"lams":m.lams,"lammix":m.lammix,
+              "muh2":m.muh2,"mus2":m.mus2,
+              "Pih":Pih,"Pis":Pis,"lamh_tilde":lamh_tilde,"Lam_CP":m.Lam}
+        dict_out.update({ "th_bool":thbool,"isEWSB": EWSBbool[0],"edm_Bool":edm_Bool})
 
         nuc_dicts=find_nucleation(m)
         phases_copy=m.phases.copy()
@@ -790,7 +766,7 @@ def my_fun(modind):
                 dict_out.update({"SNR_Tnuc_"+str(nuc_dicts.index(nuc_dict)): SNR_Tnuc})
 
                 ##Parameters at PERCOLATION temperature Tp--------------------------------------
-                Tp,volume_shrinks=T_percolation(20,df.iloc[modi].vw)
+                Tp,volume_shrinks=T_percolation(20,df.iloc[modi]["vw"])
                 dict_out.update({"Tp_"+str(nuc_dicts.index(nuc_dict)):Tp,
                                  "volume_shrinks_"+str(nuc_dicts.index(nuc_dict)):volume_shrinks})
 
@@ -835,13 +811,12 @@ def my_fun(modind):
                 dict_out.update({"vwall_Tp_"+str(nuc_dicts.index(nuc_dict)): vwall_Tp,
                                  "xi_Jouguet_Tp_"+str(nuc_dicts.index(nuc_dict)):xi_Jouguet_Tp})
 
-                my_signal_Tp=GW_signal(Tp*(1+alpha_Tp)**0.25,alpha_Tp,beta_Tp,df.iloc[modi].vw)
+                my_signal_Tp=GW_signal(Tp*(1+alpha_Tp)**0.25,alpha_Tp,beta_Tp,df.iloc[modi]["vw"])
                 peak_vals_Tp=my_signal_Tp.T[my_signal_Tp[1]==max(my_signal_Tp[1])][0] ##Extract values at peak
                 f_peak_Tp=peak_vals_Tp[0]
                 Omega_peak_Tp=peak_vals_Tp[1]
                 dict_out.update({"f_peak_Tp_"+str(nuc_dicts.index(nuc_dict)): f_peak_Tp,
                                  "Omega_peak_Tp_"+str(nuc_dicts.index(nuc_dict)):Omega_peak_Tp})
-                #SNR_Tp=SNR_GW(Tp*(1+alpha_Tp)**0.25,alpha_Tp,beta_Tp,vwall)
                 SNR_Tp=SNR_GW(my_signal_Tp)
                 dict_out.update({"SNR_Tp_"+str(nuc_dicts.index(nuc_dict)): SNR_Tp})
                 dict_out.update(dict(df[hydrocolumns].iloc[modi]))####Comment out not for BAU
@@ -857,12 +832,21 @@ def my_fun(modind):
     return dict_out
 
 
+
+
+
 ##------INSERT PANDAS:
 
-df=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])
-df=df.sort_values("alpha_max").drop_duplicates()
-hydrocolumns=['vw', 'Lh', 'dh', 'h0', 'Ls', 'ds', 'shigh', 'slow',
-            'Type', 'alpha_p', 'vm', 'vp', 'xi_s', 'Tp/TN']
+
+df=pd.read_csv("SCANS/BAU/sols_fullmodel_All.csv",index_col=[0])
+df=df[df["vel_converged"]==True]
+df=df[df.Lam_CP>df.ms]
+df=df[df.Lam_CP>v]
+df=df[df.Lam_CP>abs(df.mu3)]
+df=df[df.Lam_CP>abs(df.muhs)]
+df=df[df.alpha_max>1e-3]
+df=df.sort_values("alpha_max")
+
 
 
 
