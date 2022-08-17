@@ -859,8 +859,14 @@ def my_fun(modind):
 
 ##------INSERT PANDAS:
 
-df=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0])
-df=df.sort_values("alpha_max").drop_duplicates()
+
+df00=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df0=pd.read_csv("SCANS/Z2_breaking_no_sols_All.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
+df=pd.concat([df00,df0])
+df=df[df.vw>0]
+df=df.reset_index(drop=True)
+df=df[df.vel_converged==False]
+
 hydrocolumns=['vw', 'Lh', 'dh', 'h0', 'Ls', 'ds', 'shigh', 'slow',
             'Type', 'alpha_p', 'vm', 'vp', 'xi_s', 'Tp/TN']
 

@@ -316,8 +316,8 @@ def my_fun(modi):
     #          mu3 = mu3_val*(1+np.random.uniform(-0.1,0.1)))
 
     np.random.seed()
-    ms_val=np.random.uniform(1,v)
-    theta_val=np.random.uniform(-.1,.1)
+    ms_val=np.random.uniform(1,1000)
+    theta_val=np.random.uniform(-.3,.3)
     u_val=np.random.uniform(-1000,1000)
     mu3_val=np.random.uniform(-1000,1000)
     muhs_val=np.random.uniform(-1000,1000)
@@ -389,7 +389,7 @@ start = time.time()
 ##which allows the parallel execution of a function on the multiple input values.
 ##Pool divides the multiple inputs among the multiple processes which can be run parallelly.
 
-df=pd.read_csv("./SCANS/small_angle_scan_onShell.csv",index_col="#")
+# df=pd.read_csv("./SCANS/small_angle_scan_onShell.csv",index_col="#")
 
 f= my_fun
 if __name__ == '__main__':
@@ -398,7 +398,7 @@ if __name__ == '__main__':
 
 
 
-pd.DataFrame(df_pool).to_csv("./SCANS/On_Shell_4.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/On_Shell_0.csv")
 
 
 end = time.time()
