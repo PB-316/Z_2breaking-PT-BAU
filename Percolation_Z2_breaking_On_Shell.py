@@ -790,7 +790,8 @@ def my_fun(modind):
                 dict_out.update({"SNR_Tnuc_"+str(nuc_dicts.index(nuc_dict)): SNR_Tnuc})
 
                 ##Parameters at PERCOLATION temperature Tp--------------------------------------
-                Tp,volume_shrinks=T_percolation(20,df.iloc[modi].vw)
+                #Tp,volume_shrinks=T_percolation(20,df.iloc[modi].vw)
+                Tp,volume_shrinks=T_percolation(20,vwall)
                 dict_out.update({"Tp_"+str(nuc_dicts.index(nuc_dict)):Tp,
                                  "volume_shrinks_"+str(nuc_dicts.index(nuc_dict)):volume_shrinks})
 
@@ -835,7 +836,8 @@ def my_fun(modind):
                 dict_out.update({"vwall_Tp_"+str(nuc_dicts.index(nuc_dict)): vwall_Tp,
                                  "xi_Jouguet_Tp_"+str(nuc_dicts.index(nuc_dict)):xi_Jouguet_Tp})
 
-                my_signal_Tp=GW_signal(Tp*(1+alpha_Tp)**0.25,alpha_Tp,beta_Tp,df.iloc[modi].vw)
+                # my_signal_Tp=GW_signal(Tp*(1+alpha_Tp)**0.25,alpha_Tp,beta_Tp,df.iloc[modi].vw)
+                my_signal_Tp=GW_signal(Tp*(1+alpha_Tp)**0.25,alpha_Tp,beta_Tp,vwall_Tp)
                 peak_vals_Tp=my_signal_Tp.T[my_signal_Tp[1]==max(my_signal_Tp[1])][0] ##Extract values at peak
                 f_peak_Tp=peak_vals_Tp[0]
                 Omega_peak_Tp=peak_vals_Tp[1]
@@ -844,7 +846,7 @@ def my_fun(modind):
                 #SNR_Tp=SNR_GW(Tp*(1+alpha_Tp)**0.25,alpha_Tp,beta_Tp,vwall)
                 SNR_Tp=SNR_GW(my_signal_Tp)
                 dict_out.update({"SNR_Tp_"+str(nuc_dicts.index(nuc_dict)): SNR_Tp})
-                dict_out.update(dict(df[hydrocolumns].iloc[modi]))####Comment out not for BAU
+                #dict_out.update(dict(df[hydrocolumns].iloc[modi]))####Comment out not for BAU
 
                 #-----Fill dictionary------------------------------------------------------------
                 print("\n ..........\n Current dictionary is: \n")
@@ -860,12 +862,8 @@ def my_fun(modind):
 ##------INSERT PANDAS:
 
 
-df00=pd.read_csv("SCANS/BAU/Z2_breaking_sols_BAU_All.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df0=pd.read_csv("SCANS/Z2_breaking_no_sols_All.csv",index_col=[0]).sort_values("alpha_max").drop_duplicates()
-df=pd.concat([df00,df0])
-df=df[df.vw>0]
-df=df.reset_index(drop=True)
-df=df[df.vel_converged==False]
+df=pd.read_csv("SCANS/scan_cluster_0/On_Shell_numFOPT3.csv",index_col=[0])
+
 
 hydrocolumns=['vw', 'Lh', 'dh', 'h0', 'Ls', 'ds', 'shigh', 'slow',
             'Type', 'alpha_p', 'vm', 'vp', 'xi_s', 'Tp/TN']
@@ -887,7 +885,7 @@ if __name__ == '__main__':
         df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
-pd.DataFrame(df_pool).to_csv("./SCANS/PERCOLATION/scan_new.csv")
+pd.DataFrame(df_pool).to_csv("./SCANS/scan_cluster_0/scan_new.csv")
 
 
 
