@@ -1842,88 +1842,143 @@ def my_fun(modind):
 
 
 
-
-
-#---------------------------------
-
     np.random.seed()
-    # modi=modind
-    modi=np.random.randint(0,len(df))
-    dict_out=dict(df.iloc[modi])
-    m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs,u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3,Lam=df.iloc[modi].Lam_CP)
+    while True:
+        # modi=np.random.randint(0,len(df))
+        # ms_val=df.iloc[modi]["ms"]
+        # theta_val=df.iloc[modi]["theta"]
+        # u_val=df.iloc[modi]["u"]
+        # Lam_val=df.iloc[modi]["Lam_CP"]
+        # mu3_val=df.iloc[modi]["mu3"]
+        # muhs_val=df.iloc[modi]["muhs"]
+        Lam_val=np.random.uniform(v,1000)
+        ms_val=np.random.uniform(1,Lam_val)
+        theta_val=np.random.uniform(-.1,.1)
+        u_val=np.random.uniform(-Lam_val,Lam_val)
+        mu3_val=np.random.uniform(-Lam_val,Lam_val)
+        muhs_val=np.random.uniform(-Lam_val,Lam_val)
+        m=model1(ms = ms_val, theta =theta_val, muhs = muhs_val,u = u_val, mu3 =mu3_val,Lam=Lam_val)
+        # m=model1(ms = ms_val*(1+np.random.uniform(-0.1,0.1)),
+        #          theta = theta_val*(1+np.random.uniform(-0.1,0.1)),
+        #          muhs= muhs_val*(1+np.random.uniform(-0.1,0.1)) ,
+        #          u = u_val*(1+np.random.uniform(-0.1,0.1)),
+        #          mu3 = mu3_val*(1+np.random.uniform(-0.1,0.1)),
+        #          Lam=Lam_val*(1+np.random.uniform(-0.1,0.1)))
+        edm_Bool=d_eEDM([m.theta,m.ms,m.Lam])<d_eEDM_bound
+        thbool=m.theory_consistent()
+        EWSBbool=m.isEWSB()
+        EWSB_new=EWSBbool[0]==True  or (sum(EWSBbool[1]**2)**.5>Mplanck)
+        if edm_Bool==True and thbool==True and EWSB_new:
+            break
 
-    m.print_couplings()
-    edm_Bool=d_eEDM([m.theta,m.ms,m.Lam])<d_eEDM_bound
-    thbool=m.theory_consistent()
-    EWSBbool=m.isEWSB()
-    EWSB_new=EWSBbool[0]==True  or (sum(EWSBbool[1]**2)**.5>Mplanck)
-    if edm_Bool==True and thbool==True and EWSB_new:
+
+    Pih=g1**2/16 + 3*g**2/16 + m.lamh/2 + m.yt**2/4 + m.lammix/24
+    Pis=m.lammix/6 + m.lams/4
+    lamh_tilde=m.lamh - m.lammix**2/4/m.lams
+    dict_out={'ms':m.ms,'theta':m.theta, 'u':m.u,"muhs":m.muhs,"mu3":m.mu3,"yt":m.yt,
+          "lamh":m.lamh,"lams":m.lams,"lammix":m.lammix,
+          "muh2":m.muh2,"mus2":m.mus2,
+          "Pih":Pih,"Pis":Pis,"lamh_tilde":lamh_tilde,"Lam_CP":m.Lam}
+    dict_out.update({ "th_bool":thbool,"isEWSB": EWSBbool[0],"edm_Bool":edm_Bool})
+
+    try:
+        alltrans=m.findAllTransitions()
+        index=0
+        count_trans=0
+        alpha_list=[]
+        dT_list=[]
+        trans_types=[]
+        for elem in alltrans:
+            if elem["trantype"]==1:
+                count_trans+=1
+                phi_stable=elem["low_vev"]
+                phi_meta=elem["high_vev"]
+                SymNR=np.sum(m.findMinimum([0,0],1000)**2)**0.5>10
+                dh,ds=abs(phi_meta-phi_stable)
+                trans_types.append(trans_class(SymNR))
+                Tnuc=elem["Tnuc"]
+                Tc=elem["crit_trans"]["Tcrit"]
+                dT=abs(m.phases[elem["high_phase"]].T[0]-m.phases[elem["low_phase"]].T[-1])
+                dT_list.append(dT)
+                Delta_rho=m.energyDensity(phi_meta,Tnuc,include_radiation=True)-m.energyDensity(phi_stable,Tnuc,include_radiation=True)
+                alpha=alpha_GW(Tnuc,Delta_rho)
+                alpha_list.append(alpha)
+                Delta_pressure=m.Vtot(phi_meta,Tnuc) -m.Vtot(phi_stable,Tnuc)
+                vwformula=(Delta_pressure/Delta_rho)**0.5
+                xi_Jouguet=((alpha*(2+3*alpha))**0.5+1)/(3**0.5*(1+alpha))
+                v_calculable=vwformula<xi_Jouguet
+                dict_out.update({ "h_low_"+str(index):phi_stable[0],"s_low_"+str(index):phi_stable[1],
+                                 "h_high_"+str(index):phi_meta[0],"s_high_"+str(index):phi_meta[1],
+                                 "Tnuc_"+str(index):Tnuc,"dT_"+str(index):dT,"alpha_"+str(index):alpha,
+                                 "vwf_"+str(index):vwformula,"xi_J_"+str(index):xi_Jouguet,
+                                 "v_calculable_"+str(index):vwformula<xi_Jouguet})
+                index+=1
+        relevant_index=alpha_list.index(max(alpha_list))
+        dict_out.update({"num_FOPT":count_trans,"alpha_max":max(alpha_list),
+                         "dT_max":dT_list[relevant_index],
+                         "tran_type":trans_types[relevant_index]})
+        if max(alpha_list)<=1e-4:
+            raise Exception("alpha_max<1e-3")
+
+#---------------velocity computation------------------
+
+        df=pd.DataFrame([dict_out])
+        modi=-1
+
         potential_plot( modi,df,clevs=50, myN =170, index_trans=0)
         plt.savefig("SCANS/PLOTS/potential_"+str(modind)+".png")
-        try:
-            alltrans=m.findAllTransitions()
 
-            some_bubble=bubble(m)
-            some_bubble.test_analytic_formula()
-            some_bubble.potential_barrier()
-            some_bubble.initial_guess()
-            some_bubble.print_barrier1()
-            plt.savefig("SCANS/PLOTS/barrier2D_"+str(modind)+".png")
-            some_bubble.print_barrier2()
-            plt.savefig("SCANS/PLOTS/barrier1D_"+str(modind)+".png")
+        some_bubble=bubble(m)
+        some_bubble.test_analytic_formula()
+        some_bubble.potential_barrier()
+        some_bubble.initial_guess()
+        some_bubble.print_barrier1()
+        plt.savefig("SCANS/PLOTS/barrier2D_"+str(modind)+".png")
+        some_bubble.print_barrier2()
+        plt.savefig("SCANS/PLOTS/barrier1D_"+str(modind)+".png")
 
-            LT_max=some_bubble.LT*3
-            LT_min=some_bubble.LT*.5
-            if LT_min<1:
-                LT_min=1
-            elif some_bubble.LT==np.inf:
-                LT_max=10
-                LT_min=1
-            # vmin=some_bubble.vformula*(1-.25)
-            # vmax=some_bubble.xi_Jouguet
-            vmin=some_bubble.vformula*(1-.13)
-            vmax=some_bubble.xi_Jouguet*(1+.13)
-            some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
-            vel_converged=some_bubble.find_min_grid()
+        LT_max=some_bubble.LT*3
+        LT_min=some_bubble.LT*.5
+        if LT_min<1:
+            LT_min=1
+        elif some_bubble.LT==np.inf:
+            LT_max=10
+            LT_min=1
+        # vmin=some_bubble.vformula*(1-.25)
+        # vmax=some_bubble.xi_Jouguet
+        vmin=some_bubble.vformula*(1-.13)
+        vmax=some_bubble.xi_Jouguet*(1+.13)
+        some_bubble.grid_scan((vmin,vmax,6),(LT_min/some_bubble.T,LT_max/some_bubble.T,6))
+        vel_converged=some_bubble.find_min_grid()
+
+        some_bubble.print_gridmap()
+        plt.savefig("SCANS/PLOTS/gridmap_"+str(modind)+".png")
+        some_bubble.my_print()
+        plt.savefig("SCANS/PLOTS/perturbations_"+str(modind)+".png")
+        some_bubble.print_friction()
+        plt.savefig("SCANS/PLOTS/friction"+str(modind)+".png")
+        some_bubble.print_contribs()
+        plt.savefig("SCANS/PLOTS/moments"+str(modind)+".png")
+
+        dict_out.update(some_bubble.guess)
+        dict_out.update(some_bubble.hydro_dict)
+        dict_out.update({"vel_converged":vel_converged[0],"Tc":some_bubble.Tc,"LT":some_bubble.LT})
+        if vel_converged[0]==False:
+            dict_out.update({"Type":"Detonation"})
 
 
+    except:
+        print("error ocurred")
 
-            some_bubble.print_gridmap()
-            plt.savefig("SCANS/PLOTS/gridmap_"+str(modind)+".png")
-            some_bubble.my_print()
-            plt.savefig("SCANS/PLOTS/perturbations_"+str(modind)+".png")
-            some_bubble.print_friction()
-            plt.savefig("SCANS/PLOTS/friction"+str(modind)+".png")
-            some_bubble.print_contribs()
-            plt.savefig("SCANS/PLOTS/moments"+str(modind)+".png")
-
-            dict_out.update(some_bubble.guess)
-            dict_out.update(some_bubble.hydro_dict)
-            dict_out.update({"vel_converged":vel_converged[0],"Tc":some_bubble.Tc,"LT":some_bubble.LT})
-            if vel_converged[0]==False:
-                dict_out.update({"Type":"Detonation"})
-        except:
-            print("modi=",modi," did not work")
 
     return dict_out
 
 
-#---------------------------------Inesert pandas frame here
 
-#
-# df=pd.read_csv("SCANS/full_model_scan_todo.csv",index_col=[0])
-# df=df[df.Lam_CP>df.ms]
-# df=df[df.Lam_CP>v]
-# df=df[df.Lam_CP>abs(df.mu3)]
-# df=df[df.Lam_CP>abs(df.muhs)]
+#-----------------END OF THE FUNCTION----------------
 
-df=pd.read_csv("SCANS/BAU/sols_fullmodel_All.csv",index_col=[0])
-df=df[df["vel_converged"]==True]
-df=df[df.Lam_CP>df.ms]
-df=df[df.Lam_CP>v]
-df=df[df.Lam_CP>abs(df.mu3)]
-df=df[df.Lam_CP>abs(df.muhs)]
-df=df[df.alpha_max>1e-3]
+
+
 
 
 
@@ -1939,7 +1994,7 @@ start = time.time()
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, range(1))
+        df_pool=p.map(f, np.arange(0,30))
 
 print(df_pool)
 pd.DataFrame(df_pool).to_csv("./SCANS/full_model_vw_solutions_new.csv")
