@@ -1847,8 +1847,8 @@ def my_fun(modind):
 #---------------------------------
 
     np.random.seed()
-    # modi=modind
-    modi=np.random.randint(0,len(df))
+    modi=modind
+    # modi=np.random.randint(0,len(df))
     dict_out=dict(df.iloc[modi])
     m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs,u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3,Lam=df.iloc[modi].Lam_CP)
 
@@ -1910,20 +1910,25 @@ def my_fun(modind):
 
 #---------------------------------Inesert pandas frame here
 
-#
-# df=pd.read_csv("SCANS/full_model_scan_todo.csv",index_col=[0])
-# df=df[df.Lam_CP>df.ms]
-# df=df[df.Lam_CP>v]
-# df=df[df.Lam_CP>abs(df.mu3)]
-# df=df[df.Lam_CP>abs(df.muhs)]
 
-df=pd.read_csv("SCANS/BAU/sols_fullmodel_All.csv",index_col=[0])
+
+df2=pd.read_csv("SCANS/BAU/sols_fullmodel_2.csv",index_col=[0])
+df=df2
+
 df=df[df["vel_converged"]==True]
 df=df[df.Lam_CP>df.ms]
 df=df[df.Lam_CP>v]
 df=df[df.Lam_CP>abs(df.mu3)]
 df=df[df.Lam_CP>abs(df.muhs)]
-df=df[df.alpha_max>1e-3]
+df=df[df.Lam_CP>abs(df.u)]
+df=df[df.num_FOPT==1]
+
+df=df[df.h_low_0>v]
+df=df.sort_values("h0")
+df=df[::8]
+
+
+
 
 
 
@@ -1939,7 +1944,7 @@ start = time.time()
 f= my_fun
 if __name__ == '__main__':
     with Pool() as p:
-        df_pool=p.map(f, range(1))
+        df_pool=p.map(f, range(len(df)))
 
 print(df_pool)
 pd.DataFrame(df_pool).to_csv("./SCANS/full_model_vw_solutions_new.csv")
