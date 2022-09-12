@@ -177,7 +177,7 @@ def my_fun(modind):
             print("Model parameters are \n")
             print("ms=",self.ms,"theta=",self.theta,"muhs=",self.muhs,"u=",self.u,"mu3=",self.mu3,"\n")
 
-        def isEWSB(self):
+        def isEWSB_old(self):
             """Method to find the deepest minima of the potential at T=0.
             Doesn't work for Z_2 symmetric potential!!!"""
             n=100
@@ -201,8 +201,10 @@ def my_fun(modind):
 
             ###This loop search for a global minima randomly
             for i in range(n):
-                x1=np.random.uniform(-100,4*self.Tmax)
-                x2=np.random.uniform(-4*self.Tmax,4*self.Tmax)
+                #x1=np.random.uniform(-100,4*self.Tmax)
+                #x2=np.random.uniform(-4*self.Tmax,4*self.Tmax)
+                x1=np.random.uniform(-100,self.Tmax)
+                x2=np.random.uniform(self.Tmax,self.Tmax)
                 X0=self.findMinimum([x1,x2], T=0.0)
                 if self.Vtot(X0,0)<=self.Vtot(X_EW,0) and abs(X0[0])-v>10 and abs(self.Vtot(X0,0)-self.Vtot(X_EW,0))>1e2:
                     #print("Global minimum found at X=",X0,"\n")
@@ -210,7 +212,41 @@ def my_fun(modind):
                     return False, X0
             #print("isEWSB=True \n")
             return True,X_EW
+        def isEWSB(self):
+            """Method to find the deepest minima of the potential at T=0.
+            Doesn't work for Z_2 symmetric potential!!!"""
+            n=100
+            X_EW=np.array([v,self.u])
+            minima=[]
+            if self.muhs==0 and self.mu3==0:
+                #print("Model has a Z2 symmetry in the potential \n")
+                #print("isEWSB=True \n")
+                return True,X_EW
+            #------------
+            X0=self.findMinimum([0,100],0)
+            if self.V0(X0)<=self.V0(X_EW) and abs(abs(X0[0])-v)>10 and abs(self.V0(X0)-self.V0(X_EW))>1:
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
+            X0=self.findMinimum([0,-100],0)
+            if self.V0(X0)<self.V0(X_EW) and abs(abs(X0[0])-v)>10 and abs(self.V0(X0)-self.V0(X_EW))>1:
+                #print("Global minimum found at X=",X0,"\n")
+                #print("isEWSB=False \n")
+                return False, X0
 
+            ###This loop search for a global minima randomly
+            for i in range(n):
+                #x1=np.random.uniform(-100,4*self.Tmax)
+                #x2=np.random.uniform(-4*self.Tmax,4*self.Tmax)
+                x1=np.random.uniform(-100,self.Tmax)
+                x2=np.random.uniform(self.Tmax,self.Tmax)
+                X0=self.findMinimum([x1,x2], T=0.0)
+                if self.V0(X0)<=self.V0(X_EW) and abs(X0[0])-v>10 and abs(self.V0(X0)-self.V0(X_EW))>1e2:
+                    #print("Global minimum found at X=",X0,"\n")
+                    #print("isEWSB=False \n")
+                    return False, X0
+            #print("isEWSB=True \n")
+            return True,X_EW
 
     #######HERE ARE MY OWN FUNCTIONS
     #######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS#######HERE ARE MY OWN FUNCTIONS
