@@ -237,13 +237,11 @@ def my_fun(modind):
 
 
     modi=modind
-    EWSB_tree=[]
     dict_out=dict(df.iloc[modi])
-    for modi in range(0,len(df)):
-        m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs,
-                 u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3,Lam=df.iloc[modi].Lam_CP)
-        EWSB=m.isEWSB()
-        dict_out.update({"EWSBtree":EWSB[0],"htrue":EWSB[1][0],"htrue":EWSB[1][1]})
+    m=model1(ms = df.iloc[modi].ms, theta =df.iloc[modi].theta, muhs = df.iloc[modi].muhs,
+               u = df.iloc[modi].u, mu3 =df.iloc[modi].mu3,Lam=df.iloc[modi].Lam_CP)
+    EWSB=m.isEWSB()
+    dict_out.update({"EWSBtree":EWSB[0],"htrue":EWSB[1][0],"strue":EWSB[1][1]})
     return dict_out
 
 ###------PANDAS
