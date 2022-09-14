@@ -874,14 +874,18 @@ def my_fun(modind):
 ##------INSERT PANDAS:
 
 
-df=pd.read_csv("SCANS/BAU/sols_fullmodel_All.csv",index_col=[0])
+df=pd.read_csv("SCANS/results_cluster.csv",index_col=[0])
+df=df[df.EWSBtree==True]
 df=df[df["vel_converged"]==True]
 df=df[df.Lam_CP>df.ms]
 df=df[df.Lam_CP>v]
 df=df[df.Lam_CP>abs(df.mu3)]
 df=df[df.Lam_CP>abs(df.muhs)]
-df=df[df.alpha_max>1e-3]
-df=df.sort_values("alpha_max")
+df=df[df.Lam_CP>abs(df.u)]
+df=df[df.num_FOPT==1]
+df=df[df.h_low_0>20]
+df=df.drop(1455)
+df=df[:4]
 
 
 
